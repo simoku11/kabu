@@ -1,0 +1,598 @@
+1. Spielidee
+
+Kabu ist ein schnelles Karten- und Gedächtnisspiel für 2 bis 6 Spieler.
+
+Die Spieler besitzen verdeckte Karten, deren Werte sie sich im Laufe des Spiels merken müssen. Ziel ist es, möglichst wenige Punkte zu sammeln. Dies gelingt auf zwei Arten:
+
+* möglichst niedrige Kartenwerte besitzen oder
+* alle eigenen Karten loswerden.
+
+Neben den normalen Spielzügen gibt es eine Echtzeit-Komponente: Spieler können auch außerhalb ihres eigenen Zuges auf abgelegte Karten reagieren und dadurch Karten loswerden.
+
+Eine Partie besteht aus mehreren Runden, beispielsweise 10 Runden. Nach der letzten Runde gewinnt der Spieler mit der niedrigsten Gesamtpunktzahl. Ein Gleichstand ist möglich.
+
+⸻
+
+2. Spielmaterial
+
+Gespielt wird mit einem klassischen Kartendeck mit vier Farben:
+
+* Herz ♥
+* Karo ♦
+* Pik ♠
+* Kreuz ♣
+
+Verwendet werden:
+
+* Ass
+* 2–10
+* Bube
+* Dame
+* König
+
+Es gibt einen Nachziehstapel und einen Ablagestapel.
+
+⸻
+
+3. Kartenwerte
+
+Am Ende einer Runde zählen die noch vor einem Spieler liegenden Karten folgende Punkte:
+
+Karte	Punkte
+Ass	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+Bube	11
+Dame	12
+roter König ♥♦	0
+schwarzer König ♠♣	13
+
+Die Farbe spielt für den Kartenwert nur bei den Königen eine Rolle.
+
+⸻
+
+4. Spielaufbau
+
+Jeder Spieler erhält standardmäßig 4 Karten.
+
+Die Karten werden verdeckt in einem 2×2-Feld vor dem Spieler ausgelegt.
+
+Vor Beginn der Runde darf jeder Spieler genau 2 seiner eigenen Karten ansehen. Anschließend werden diese wieder verdeckt an ihre ursprünglichen Positionen gelegt.
+
+Die Spieler müssen sich merken, welche Karten sie gesehen haben.
+
+Die übrigen Karten bilden den verdeckten Nachziehstapel.
+
+⸻
+
+5. Kartenpositionen
+
+Die Position einer Karte ist Teil des Spiels.
+
+Karten werden während des Spiels nicht automatisch neu sortiert.
+
+Erhält ein Spieler zusätzliche Karten, beispielsweise durch eine Strafe oder einen roten König, werden diese verdeckt in sein Kartenfeld eingefügt. Das Feld bleibt grundsätzlich zweireihig und wird bei Bedarf um weitere Spalten erweitert.
+
+Eine Karte verändert ihre Position nur durch eine Spielaktion, die tatsächlich Karten verschiebt oder tauscht, insbesondere durch die Fähigkeiten der schwarzen Dame oder des schwarzen Königs.
+
+⸻
+
+6. Grundlegender Zugablauf
+
+Die Spieler sind im Uhrzeigersinn an der Reihe.
+
+Zu Beginn seines regulären Zuges hat ein Spieler grundsätzlich zwei Möglichkeiten:
+
+1. einen normalen Zug durchführen oder
+2. Kabu ansagen.
+
+Bei einem normalen Zug zieht der Spieler zunächst eine Karte vom Nachziehstapel.
+
+Anschließend entscheidet er sich zwischen zwei Möglichkeiten.
+
+Möglichkeit A – Karte direkt ablegen
+
+Die gezogene Karte wird unmittelbar auf den Ablagestapel gelegt.
+
+In diesem Fall wird die Spezialfähigkeit der Karte ausgelöst, sofern sie eine besitzt.
+
+Möglichkeit B – Karte tauschen
+
+Der Spieler wählt eine seiner eigenen verdeckten Karten aus.
+
+Die gezogene Karte wird verdeckt an deren Position gelegt. Die bisher dort liegende Karte wird auf den Ablagestapel gelegt.
+
+Die abgelegte Karte löst in diesem Fall keine Spezialfähigkeit aus.
+
+Nach Abschluss der Aktion endet der normale Zug.
+
+⸻
+
+7. Grundregel für Spezialfähigkeiten
+
+Eine Spezialfähigkeit wird ausschließlich dann ausgelöst, wenn:
+
+* die Karte gerade vom Nachziehstapel gezogen wurde und
+* der aktive Spieler sie unmittelbar auf den Ablagestapel legt.
+
+Keine Spezialfähigkeit wird ausgelöst, wenn eine Karte:
+
+* aus dem eigenen Kartenfeld herausgetauscht wird,
+* als Reaktionskarte abgelegt wird,
+* aus dem Kartenfeld eines Gegners als Reaktionskarte abgelegt wird.
+
+Eine auf diese Weise abgelegte Karte kann trotzdem ganz normal als neuer sichtbarer Bestandteil des Ablagestapels behandelt werden.
+
+⸻
+
+8. Spezialfähigkeiten
+
+Ass
+
+Keine Spezialfähigkeit.
+
+⸻
+
+2 – Aussetzen
+
+Der nächste Spieler in Spielrichtung setzt seinen Zug aus.
+
+Eine als Reaktionskarte oder durch einen Tausch abgelegte 2 löst diese Fähigkeit nicht aus.
+
+⸻
+
+3, 4, 5 und 6 – Eigene Karte ansehen
+
+Der Spieler darf eine beliebige eigene verdeckte Karte ansehen.
+
+Nur der Spieler selbst erhält diese Information.
+
+Anschließend wird die Karte wieder verdeckt an dieselbe Position gelegt.
+
+⸻
+
+7, 8, 9 und 10 – Gegnerische Karte ansehen
+
+Der Spieler darf eine beliebige verdeckte Karte eines Gegners ansehen.
+
+Nur der Spieler, der die Fähigkeit ausgelöst hat, sieht die Karte.
+
+Anschließend wird sie wieder verdeckt an dieselbe Position gelegt.
+
+⸻
+
+Bube
+
+Keine Spezialfähigkeit.
+
+⸻
+
+Rote Dame – Herz/Karo
+
+Keine Spezialfähigkeit.
+
+⸻
+
+Schwarze Dame – Pik/Kreuz
+
+Der Spieler wählt zwei verdeckte Karten von zwei unterschiedlichen Spielern.
+
+Der ausführende Spieler selbst darf einer dieser beiden Spieler sein.
+
+Die ausgewählten Karten werden nicht angesehen.
+
+Anschließend werden ihre Positionen miteinander getauscht.
+
+⸻
+
+Roter König – Herz/Karo
+
+Der Spieler bestimmt einen beliebigen Spieler.
+
+Dieser Spieler erhält eine zusätzliche verdeckte Karte vom Nachziehstapel.
+
+Die neue Karte wird blind in dessen Kartenfeld gelegt und darf nicht angesehen werden.
+
+⸻
+
+Schwarzer König – Pik/Kreuz
+
+Der Spieler wählt zwei Karten von zwei unterschiedlichen Spielern.
+
+Der ausführende Spieler darf selbst einer dieser Spieler sein.
+
+Nur der ausführende Spieler sieht die beiden ausgewählten Karten.
+
+Anschließend entscheidet er, ob:
+
+* die beiden Karten ihre Positionen behalten oder
+* die beiden Karten miteinander getauscht werden.
+
+Die anderen Spieler erfahren die Kartenwerte durch diese Fähigkeit nicht.
+
+⸻
+
+9. Das Reaktionssystem
+
+Das Reaktionssystem ist eine der zentralen Mechaniken von Kabu.
+
+Sobald eine Karte auf dem Ablagestapel abgelegt wurde, können Spieler versuchen, eine Karte desselben Rangs zusätzlich abzuwerfen.
+
+Dabei ist die Farbe irrelevant.
+
+Beispiele:
+
+* Herz-7 kann mit Pik-7 beantwortet werden.
+* Karo-Dame kann mit Kreuz-Dame beantwortet werden.
+* Herz-König kann mit Pik-König beantwortet werden.
+
+Entscheidend ist ausschließlich der Rang: 7 auf 7, Dame auf Dame, König auf König usw.
+
+⸻
+
+10. Dauer des Reaktionsfensters
+
+Das Reaktionsfenster beginnt, sobald eine Karte auf dem Ablagestapel liegt.
+
+Es endet erst, wenn im folgenden regulären Spielzug eine neue Karte auf den Ablagestapel gelegt wird.
+
+Das bedeutet:
+
+Ein Spieler kann eine Karte ablegen und deren Spezialfähigkeit vollständig ausführen. Der nächste Spieler kann anschließend bereits seinen Zug beginnen und eine Karte vom Nachziehstapel ziehen.
+
+Solange dieser nächste Spieler noch keine neue Karte auf den Ablagestapel gelegt hat, kann weiterhin auf den bisherigen Rang reagiert werden.
+
+Spezialfähigkeiten beenden das Reaktionsfenster nicht.
+
+⸻
+
+11. Reaktion mit einer eigenen Karte
+
+Jeder Spieler darf während eines offenen Reaktionsfensters eine seiner eigenen Karten auswählen und versuchen, sie abzulegen.
+
+Das gilt auch für den Spieler, der aktuell regulär am Zug ist.
+
+Der Spieler muss die Karte vorher nicht kennen.
+
+Stimmt der Rang mit dem aktuellen Reaktionsrang überein, wird die Karte erfolgreich auf den Ablagestapel gelegt.
+
+Der Spieler ist damit eine eigene Karte losgeworden.
+
+Die Reaktionskarte löst keine Spezialfähigkeit aus.
+
+⸻
+
+12. Neu erhaltene Karten
+
+Auch neu erhaltene Karten gelten unmittelbar als normale eigene Karten.
+
+Dies betrifft beispielsweise:
+
+* Strafkarten,
+* Karten durch einen roten König.
+
+Solange das Reaktionsfenster noch offen ist, darf ein Spieler theoretisch auch eine gerade erhaltene und ihm unbekannte Karte als Reaktionsversuch verwenden.
+
+⸻
+
+13. Reaktion mit einer gegnerischen Karte
+
+Ein Spieler darf nicht nur seine eigenen Karten verwenden.
+
+Er darf auch versuchen, eine verdeckte Karte eines Gegners als passende Reaktionskarte abzulegen.
+
+Das ist insbesondere dann taktisch interessant, wenn er durch eine frühere Aktion den Wert dieser gegnerischen Karte kennt.
+
+Ist die ausgewählte gegnerische Karte korrekt, wird sie auf den Ablagestapel gelegt.
+
+Dadurch würde der Gegner zunächst eine Karte verlieren.
+
+Als Ausgleich muss der reagierende Spieler anschließend eine beliebige seiner eigenen Karten auswählen und verdeckt an diesen Gegner übertragen.
+
+Die übertragene Karte darf dabei nicht angesehen werden.
+
+Damit hat der reagierende Spieler selbst netto eine Karte weniger, während sich die Anzahl der Karten des Gegners nicht verändert.
+
+⸻
+
+14. Falscher Reaktionsversuch
+
+Wählt ein Spieler eine Karte als Reaktionskarte und besitzt diese nicht den erforderlichen Rang, handelt es sich um einen Fehlversuch.
+
+Die ausgewählte Karte wird für alle Spieler sichtbar aufgedeckt.
+
+Dadurch kennen anschließend alle Spieler den tatsächlichen Wert dieser Karte.
+
+Danach wird sie wieder verdeckt an dieselbe Position gelegt.
+
+Der Spieler, der den Fehlversuch verursacht hat, erhält als Strafe eine zusätzliche verdeckte Karte vom Nachziehstapel.
+
+Dabei ist unerheblich, wem die falsch ausgewählte Karte gehört.
+
+Wird beispielsweise die Karte eines Gegners falsch ausgewählt, erhält trotzdem der Spieler die Strafkarte, der den Reaktionsversuch durchgeführt hat.
+
+⸻
+
+15. Mehrere Fehlversuche
+
+Ein Fehlversuch beendet das Reaktionsfenster nicht.
+
+Solange noch kein erfolgreicher Reaktionsabwurf stattgefunden hat, darf erneut reagiert werden.
+
+Auch derselbe Spieler darf erneut versuchen, eine passende Karte zu finden.
+
+Jeder einzelne Fehlversuch verursacht jeweils eine zusätzliche Strafkarte.
+
+Ein Spieler könnte daher beispielsweise zweimal falsch reagieren, zwei Strafkarten erhalten und anschließend mit einer dritten Auswahl erfolgreich reagieren.
+
+⸻
+
+16. Nur eine erfolgreiche Reaktion
+
+Pro Reaktionsfenster ist genau ein erfolgreicher zusätzlicher Abwurf möglich.
+
+Sobald eine gültige Reaktionskarte erfolgreich abgelegt wurde, ist die Reaktionsmöglichkeit für dieses Fenster verbraucht.
+
+Weitere Spieler dürfen nicht noch eine Karte desselben Rangs hinterherwerfen.
+
+Fehlversuche zählen nicht als erfolgreiche Reaktion und schließen das Fenster daher nicht.
+
+⸻
+
+17. Schnelligkeit bei gleichzeitigen Reaktionen
+
+Mehrere Spieler können versuchen, nahezu gleichzeitig zu reagieren.
+
+Der schnellste gültige Reaktionsversuch gewinnt.
+
+Für die digitale Version muss die Reihenfolge so exakt und fair wie technisch möglich bestimmt werden.
+
+Sobald eine gültige Reaktion akzeptiert wurde, können keine weiteren Reaktionen dieses Reaktionsfensters erfolgreich ausgeführt werden.
+
+⸻
+
+18. Reaktion auf Informationen aus einer Spezialfähigkeit
+
+Informationen, die ein Spieler gerade erst durch eine Spezialfähigkeit erhalten hat, dürfen sofort verwendet werden.
+
+Beispiel:
+
+Ein Spieler zieht eine 5 und legt sie direkt ab.
+
+Durch die Fähigkeit der 5 darf er eine eigene Karte ansehen. Dabei stellt er fest, dass diese eigene Karte ebenfalls eine 5 ist.
+
+Da das Reaktionsfenster der abgelegten 5 weiterhin offen ist, darf er diese gerade identifizierte 5 unmittelbar als Reaktionskarte abwerfen.
+
+⸻
+
+19. Reaktion während einer Spezialfähigkeit
+
+Eine bereits ausgelöste Spezialfähigkeit wird vollständig ausgeführt, auch wenn währenddessen ein anderer Spieler erfolgreich reagiert.
+
+Beispiel:
+
+Spieler A legt einen schwarzen König direkt vom Nachziehstapel ab und löst dessen Fähigkeit aus.
+
+Spieler B reagiert währenddessen erfolgreich mit einem eigenen König.
+
+Die Fähigkeit von Spieler A wird trotzdem vollständig ausgeführt.
+
+Der König von Spieler B löst dagegen keine eigene Spezialfähigkeit aus.
+
+⸻
+
+20. Reaktion auf Karten aus einem Tausch
+
+Auch Karten, die durch einen normalen Tausch auf dem Ablagestapel landen, können als Grundlage einer Reaktion dienen.
+
+Beispiel:
+
+Ein Spieler zieht eine 4 und tauscht sie gegen eine seiner verdeckten Karten.
+
+Die abgelegte eigene Karte stellt sich als Dame heraus.
+
+Die Dame besitzt in diesem Fall keine Spezialfähigkeit, da sie nicht direkt vom Nachziehstapel abgelegt wurde.
+
+Andere Spieler können jedoch ganz normal versuchen, eine weitere Dame als Reaktionskarte abzulegen.
+
+⸻
+
+21. Aufgedeckte Fehlversuche sind keine Ablage
+
+Wird bei einem falschen Reaktionsversuch eine Karte aufgedeckt, gilt diese Karte nicht als abgelegt.
+
+Sie erzeugt daher kein neues Reaktionsfenster.
+
+Beispiel:
+
+Auf dem Ablagestapel liegt eine 9.
+
+Ein Spieler versucht mit einer verdeckten Karte zu reagieren. Die Karte stellt sich als 6 heraus.
+
+Die 6 wird allen gezeigt und anschließend wieder verdeckt zurückgelegt.
+
+Der relevante Rang bleibt weiterhin die 9.
+
+⸻
+
+22. Nachziehstapel ist leer
+
+Ist der Nachziehstapel leer, wird der Ablagestapel neu gemischt und als neuer Nachziehstapel verwendet.
+
+Die oberste Karte des Ablagestapels bleibt liegen und wird nicht mit eingemischt.
+
+Dadurch bleibt der aktuell sichtbare beziehungsweise relevante Ablagerang erhalten.
+
+⸻
+
+23. Rundenende durch 0 Karten
+
+Sobald ein Spieler keine eigenen Karten mehr besitzt, wird grundsätzlich das Ende der Runde ausgelöst.
+
+Dies kann beispielsweise durch einen erfolgreichen Reaktionsabwurf geschehen.
+
+Auch die besondere Reaktion mit einer gegnerischen Karte kann dazu führen:
+
+Ein Spieler wirft erfolgreich eine Karte eines Gegners ab und gibt dem Gegner dafür seine letzte eigene Karte. Der reagierende Spieler besitzt danach 0 Karten.
+
+⸻
+
+24. Ausstehende Pflichtaktionen beim Rundenende
+
+Das Erreichen von 0 Karten beendet die Runde nicht in jedem Fall in exakt derselben Millisekunde.
+
+Bereits ausgelöste und zwingend abzuwickelnde Effekte werden zunächst abgeschlossen.
+
+Der Zustand kann daher als vorläufiges Rundenende betrachtet werden.
+
+Beispiel:
+
+Spieler A besitzt nur noch einen schwarzen König.
+
+Spieler B hat unmittelbar zuvor einen roten König direkt abgelegt und dessen Fähigkeit ausgelöst.
+
+A reagiert mit seinem schwarzen König und besitzt dadurch vorübergehend 0 Karten.
+
+Die bereits ausgelöste Fähigkeit des roten Königs wird jedoch noch ausgeführt. Entscheidet B, die zusätzliche Karte an A zu geben, besitzt A anschließend wieder eine Karte.
+
+In diesem Fall wird das vorläufige Rundenende aufgehoben und die Runde geht weiter.
+
+Werden keine Karten mehr an einen Spieler mit 0 Karten vergeben und sind alle zwingenden Aktionen abgeschlossen, endet die Runde.
+
+Nach Eintritt des vorläufigen Rundenendes können keine neuen Reaktionsversuche mehr gestartet werden. Es werden nur bereits ausgelöste Pflichtaktionen abgewickelt.
+
+⸻
+
+25. Kabu ansagen
+
+Neben dem vollständigen Loswerden aller Karten gibt es eine zweite Möglichkeit, das Ende einer Runde einzuleiten: Kabu.
+
+Ein Spieler darf Kabu ausschließlich zu Beginn seines eigenen regulären Zuges ansagen.
+
+Die Kabu-Ansage ersetzt den gesamten Zug.
+
+Der Spieler:
+
+* zieht keine Karte,
+* tauscht keine Karte,
+* legt keine Karte ab,
+* führt keine normale Kartenaktion aus.
+
+Sein Zug besteht ausschließlich aus der Ansage „Kabu“.
+
+⸻
+
+26. Schlussphase nach Kabu
+
+Kabu beendet die Runde nicht sofort.
+
+Nach der Kabu-Ansage erhält jeder andere Spieler noch genau einen letzten regulären Zug.
+
+Der Spieler, der Kabu angesagt hat, erhält keinen weiteren Zug.
+
+Nach diesen letzten Zügen endet die Runde und alle Karten werden gewertet.
+
+⸻
+
+27. Vorzeitiges Ende während der Kabu-Schlussphase
+
+Die normale 0-Karten-Regel bleibt auch während der Kabu-Schlussphase bestehen.
+
+Erreicht ein Spieler während seines letzten Zuges oder durch eine Reaktion 0 Karten, wird das Rundenende sofort eingeleitet.
+
+Nach Abwicklung bereits ausgelöster Pflichtaktionen endet die Runde.
+
+Die übrigen Spieler erhalten ihre eigentlich noch vorgesehenen letzten Züge dann nicht mehr.
+
+⸻
+
+28. Wertung nach Kabu
+
+Nach dem Ende der Runde werden die Kartenpunkte jedes Spielers addiert.
+
+Anschließend wird geprüft, ob der Spieler, der Kabu angesagt hat, allein die niedrigste Kartenpunktzahl besitzt.
+
+Ist er allein der beste Spieler, erhält er keine zusätzliche Strafe.
+
+Ist ein anderer Spieler besser, erhält der Kabu-Ansager:
+
++10 Strafpunkte
+
+Auch ein Gleichstand reicht für eine erfolgreiche Kabu-Ansage nicht aus.
+
+Beispiel:
+
+* Spieler A sagt Kabu und besitzt am Ende 4 Punkte.
+* Spieler B besitzt ebenfalls 4 Punkte.
+* Alle anderen Spieler besitzen mehr Punkte.
+
+A und B sind gemeinsam die besten Spieler.
+
+Da A jedoch nicht allein die niedrigste Punktzahl besitzt, erhält A +10 Strafpunkte und beendet die Runde mit 14 Punkten.
+
+⸻
+
+29. Rundenwertung
+
+Am Ende jeder Runde werden alle noch vorhandenen Karten aufgedeckt.
+
+Die Kartenwerte eines Spielers werden addiert.
+
+Eventuelle Kabu-Strafpunkte werden anschließend hinzugefügt.
+
+Die daraus entstehende Zahl ist das Rundenergebnis des Spielers.
+
+Ein Spieler, der keine Karten mehr besitzt, hat entsprechend 0 Kartenpunkte.
+
+⸻
+
+30. Gesamtspiel
+
+Eine vollständige Partie besteht aus einer vorher festgelegten Anzahl von Runden, beispielsweise 10 Runden.
+
+Nach jeder Runde werden die erzielten Punkte zum bisherigen Gesamtpunktestand des jeweiligen Spielers addiert.
+
+Nach der letzten Runde gewinnt der Spieler mit der niedrigsten Gesamtpunktzahl.
+
+Haben mehrere Spieler dieselbe niedrigste Gesamtpunktzahl, gibt es mehrere Gewinner.
+
+⸻
+
+31. Zentrale Grundprinzipien
+
+Kabu verbindet vier unterschiedliche Spielelemente:
+
+Gedächtnis:
+Die meisten Karten bleiben verdeckt. Spieler müssen sich bekannte Karten und deren Positionen merken.
+
+Informationsgewinn:
+Bestimmte Karten erlauben gezieltes Anschauen eigener oder gegnerischer Karten.
+
+Taktik:
+Karten können getauscht, an Gegner übertragen oder bewusst für spätere Reaktionen behalten werden.
+
+Reaktionsgeschwindigkeit:
+Auf eine abgelegte Karte können alle Spieler gleichzeitig reagieren. Wer eine passende Karte kennt und am schnellsten korrekt reagiert, kann Karten loswerden.
+
+Dadurch ist nicht nur wichtig, welche Karten ein Spieler kennt, sondern auch, wie schnell er diese Information erkennt und in eine Aktion umsetzt.
+
+⸻
+
+Kurzfassung des Rundenziels
+
+Eine Runde Kabu endet auf einem von zwei grundlegenden Wegen:
+
+0 Karten:
+Ein Spieler wird alle eigenen Karten los. Nach Abwicklung bereits ausgelöster Pflichtaktionen endet die Runde.
+
+Kabu:
+Ein Spieler glaubt, einen besonders niedrigen Kartenwert zu besitzen, und sagt zu Beginn seines Zuges Kabu. Alle anderen Spieler erhalten noch einen letzten Zug. Danach wird gewertet. Der Kabu-Ansager muss allein die niedrigste Kartenpunktzahl besitzen, andernfalls erhält er +10 Strafpunkte.
+
+Über mehrere Runden gewinnt am Ende der Spieler mit den wenigsten Gesamtpunkten.

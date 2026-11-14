@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@kabu/protocol": ["../../packages/protocol/src/index.ts"],
+      "@kabu/game-core": ["../../packages/game-core/src/index.ts"]
+    },
+    "rootDir": "../..",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src", "drizzle.config.ts", "vitest.config.ts"]
+}

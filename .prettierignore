@@ -1,0 +1,8 @@
+dist
+coverage
+node_modules
+.pnpm-store
+.sites-runtime/
+pnpm-lock.yaml
+project_sources
+docs/Kabu-*
