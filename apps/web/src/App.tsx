@@ -29,6 +29,7 @@ import {
   takeOverControl,
   type LobbySocket,
 } from "./lobby-client";
+import { I18nProvider, LanguageMenu, useI18n } from "./i18n";
 
 type Screen =
   | { kind: "loading" }
@@ -44,6 +45,16 @@ function codeFromLocation(): string | undefined {
 }
 
 export function App() {
+  return (
+    <I18nProvider>
+      <LanguageMenu />
+      <AppContent />
+    </I18nProvider>
+  );
+}
+
+function AppContent() {
+  const { language, t } = useI18n();
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
   const [name, setName] = useState("");
   const [code, setCode] = useState(codeFromLocation() ?? "");
@@ -90,8 +101,8 @@ export function App() {
           kind: "fatal",
           message:
             error instanceof Error
-              ? error.message
-              : "Die App konnte nicht gestartet werden.",
+              ? t(error.message)
+              : t("Die App konnte nicht gestartet werden."),
         });
       }
     })();
@@ -126,19 +137,19 @@ export function App() {
                 if (!ack) {
                   setActionFeedback({
                     kind: "rejected",
-                    text: `${unresolved.label}: nicht vom Server empfangen.`,
+                    text: `${unresolved.label}: ${t("nicht vom Server empfangen.")}`,
                   });
                 } else if (ack.accepted) {
                   setActionFeedback({
                     kind: "confirmed",
-                    text: `${unresolved.label} war bereits bestätigt.`,
+                    text: `${unresolved.label} ${t("war bereits bestätigt.")}`,
                   });
                 } else {
                   setActionFeedback({
                     kind: "rejected",
                     text:
-                      ack.error?.message ??
-                      `${unresolved.label} wurde abgelehnt.`,
+                      (ack.error?.message ? t(ack.error.message) : undefined) ??
+                      `${unresolved.label} ${t("wurde abgelehnt.")}`,
                   });
                 }
                 unresolvedRef.current = null;
@@ -147,7 +158,7 @@ export function App() {
           }
         } else {
           setSyncing(false);
-          setMessage(result.error.message);
+          setMessage(t(result.error.message));
         }
       });
     });
@@ -167,7 +178,9 @@ export function App() {
       setOnline(false);
       setSyncing(false);
       setMessage(
-        "Wiederaufnahme gescheitert. Prüfe die Verbindung und lade die Seite erneut.",
+        t(
+          "Wiederaufnahme gescheitert. Prüfe die Verbindung und lade die Seite erneut.",
+        ),
       );
     });
     socket.on("room:control", (state) => setControl(state));
@@ -189,8 +202,8 @@ export function App() {
           .catch((error) =>
             setMessage(
               error instanceof Error
-                ? error.message
-                : "Zustandsabgleich fehlgeschlagen.",
+                ? t(error.message)
+                : t("Zustandsabgleich fehlgeschlagen."),
             ),
           )
           .finally(() => setSyncing(false));
@@ -211,7 +224,7 @@ export function App() {
       socketRef.current = undefined;
       setOnline(false);
     };
-  }, [activeCode]);
+  }, [activeCode, language]);
 
   const enterLobby = (snapshot: LobbySnapshot) => {
     window.history.pushState({}, "", `/room/${snapshot.room.code}`);
@@ -230,8 +243,8 @@ export function App() {
     } catch (error) {
       setMessage(
         error instanceof Error
-          ? error.message
-          : "Raum konnte nicht erstellt werden.",
+          ? t(error.message)
+          : t("Raum konnte nicht erstellt werden."),
       );
     } finally {
       setPending(false);
@@ -246,7 +259,9 @@ export function App() {
       enterLobby(await joinRoom(code, name));
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Beitritt fehlgeschlagen.",
+        error instanceof Error
+          ? t(error.message)
+          : t("Beitritt fehlgeschlagen."),
       );
     } finally {
       setPending(false);
@@ -270,15 +285,17 @@ export function App() {
     ) {
       setActionFeedback({
         kind: "rejected",
-        text: "Aktion nicht gesendet: Verbindung oder Zustandsabgleich ist nicht bereit.",
+        text: t(
+          "Aktion nicht gesendet: Verbindung oder Zustandsabgleich ist nicht bereit.",
+        ),
       });
       return;
     }
     setPending(true);
     setMessage("");
-    setActionFeedback({ kind: "sending", text: actionLabel(value.type) });
+    setActionFeedback({ kind: "sending", text: actionLabel(value.type, t) });
     const commandId = createCommandId();
-    unresolvedRef.current = { commandId, label: actionLabel(value.type) };
+    unresolvedRef.current = { commandId, label: actionLabel(value.type, t) };
     try {
       const ack = await sendCommand(
         socketRef.current,
@@ -288,13 +305,13 @@ export function App() {
       );
       unresolvedRef.current = null;
       if (!ack.accepted) {
-        const text = feedbackForRejection(ack, value.type);
+        const text = feedbackForRejection(ack, value.type, t);
         setMessage(text);
         setActionFeedback({ kind: "rejected", text });
       } else {
         setActionFeedback({
           kind: "confirmed",
-          text: `${actionLabel(value.type)} bestätigt.`,
+          text: `${actionLabel(value.type, t)} ${t("bestätigt.")}`,
         });
       }
       if (ack.accepted && value.type === "lobby.leave") {
@@ -313,9 +330,11 @@ export function App() {
           );
           unresolvedRef.current = null;
           const text = resolved?.accepted
-            ? `${actionLabel(value.type)} war bereits bestätigt.`
-            : (resolved?.error?.message ??
-              `${actionLabel(value.type)} wurde nicht vom Server empfangen.`);
+            ? `${actionLabel(value.type, t)} ${t("war bereits bestätigt.")}`
+            : ((resolved?.error?.message
+                ? t(resolved.error.message)
+                : undefined) ??
+              `${actionLabel(value.type, t)} ${t("wurde nicht vom Server empfangen.")}`);
           setMessage(resolved?.accepted ? "" : text);
           setActionFeedback({
             kind: resolved?.accepted ? "confirmed" : "rejected",
@@ -326,8 +345,9 @@ export function App() {
           // The reconnect handler performs the same read-only lookup later.
         }
       }
-      const text =
-        "Verbindung unterbrochen – der Befehlsstatus wird nach der Rückkehr geprüft.";
+      const text = t(
+        "Verbindung unterbrochen – der Befehlsstatus wird nach der Rückkehr geprüft.",
+      );
       setMessage(text);
       setActionFeedback({ kind: "rejected", text });
     } finally {
@@ -341,7 +361,7 @@ export function App() {
       <main className="shell">
         <section className="card status" aria-live="polite">
           <Brand />
-          <p>Deine Gastsitzung wird vorbereitet …</p>
+          <p>{t("Deine Gastsitzung wird vorbereitet …")}</p>
         </section>
       </main>
     );
@@ -352,10 +372,10 @@ export function App() {
       <main className="shell">
         <section className="card status">
           <Brand />
-          <h2>Verbindung fehlgeschlagen</h2>
+          <h2>{t("Verbindung fehlgeschlagen")}</h2>
           <p className="error">{screen.message}</p>
           <button type="button" onClick={() => window.location.reload()}>
-            Erneut versuchen
+            {t("Erneut versuchen")}
           </button>
         </section>
       </main>
@@ -368,18 +388,20 @@ export function App() {
       <main className="shell">
         <section className="card home-card">
           <Brand />
-          <p className="eyebrow">Private Runde · 2–6 Spieler</p>
+          <p className="eyebrow">{t("Private Runde · 2–6 Spieler")}</p>
           <h2>
-            {invitedCode ? "Einladung annehmen" : "Gemeinsam an einen Tisch"}
+            {invitedCode
+              ? t("Einladung annehmen")
+              : t("Gemeinsam an einen Tisch")}
           </h2>
           <label>
-            Dein Name
+            {t("Dein Name")}
             <input
               value={name}
               maxLength={24}
               autoComplete="nickname"
               onChange={(event) => setName(event.target.value)}
-              placeholder="z. B. Anna"
+              placeholder={t("z. B. Anna")}
             />
           </label>
 
@@ -387,14 +409,14 @@ export function App() {
             <form onSubmit={(event) => void handleJoin(event)}>
               <p className="invite-code">{invitedCode}</p>
               <button disabled={pending || name.trim().length === 0}>
-                Raum beitreten
+                {t("Raum beitreten")}
               </button>
             </form>
           ) : (
             <>
               <form onSubmit={(event) => void handleCreate(event)}>
                 <label>
-                  Rundenzahl
+                  {t("Rundenzahl")}
                   <input
                     type="number"
                     inputMode="numeric"
@@ -413,15 +435,15 @@ export function App() {
                     !Number.isInteger(roundCount)
                   }
                 >
-                  Privaten Raum erstellen
+                  {t("Privaten Raum erstellen")}
                 </button>
               </form>
               <div className="divider">
-                <span>oder</span>
+                <span>{t("oder")}</span>
               </div>
               <form onSubmit={(event) => void handleJoin(event)}>
                 <label>
-                  Raumcode
+                  {t("Raumcode")}
                   <input
                     value={code}
                     maxLength={6}
@@ -440,7 +462,7 @@ export function App() {
                     code.trim().length !== 6
                   }
                 >
-                  Beitreten
+                  {t("Beitreten")}
                 </button>
               </form>
             </>
@@ -491,8 +513,8 @@ export function App() {
             .catch((error) =>
               setMessage(
                 error instanceof Error
-                  ? error.message
-                  : "Übernahme fehlgeschlagen.",
+                  ? t(error.message)
+                  : t("Übernahme fehlgeschlagen."),
               ),
             )
             .finally(() => setPending(false));
@@ -511,12 +533,12 @@ export function App() {
         <header className="lobby-header">
           <Brand compact />
           <span className={online ? "network online" : "network"}>
-            {online ? "Online" : "Verbinde …"}
+            {online ? t("Online") : t("Verbinde …")}
           </span>
         </header>
         <div className="room-title">
           <div>
-            <p className="eyebrow">Raumcode</p>
+            <p className="eyebrow">{t("Raumcode")}</p>
             <h2>{snapshot.room.code}</h2>
           </div>
           <button
@@ -527,14 +549,14 @@ export function App() {
                 .writeText(
                   `${window.location.origin}/room/${snapshot.room.code}`,
                 )
-                .then(() => setMessage("Einladungslink kopiert."))
+                .then(() => setMessage(t("Einladungslink kopiert.")))
             }
           >
-            Link kopieren
+            {t("Link kopieren")}
           </button>
         </div>
 
-        <ol className="participants" aria-label="Teilnehmer">
+        <ol className="participants" aria-label={t("Teilnehmer")}>
           {snapshot.participants.map((participant) => (
             <li key={participant.playerId}>
               <span
@@ -544,18 +566,19 @@ export function App() {
               </span>
               <span className="participant-name">
                 {participant.name}
-                {participant.playerId === snapshot.you.playerId && " (du)"}
+                {participant.playerId === snapshot.you.playerId &&
+                  ` (${t("du")})`}
               </span>
-              {participant.isHost && <span className="tag">Host</span>}
+              {participant.isHost && <span className="tag">{t("Host")}</span>}
               <span className={participant.ready ? "ready yes" : "ready"}>
-                {participant.ready ? "Bereit" : "Wartet"}
+                {participant.ready ? t("Bereit") : t("Wartet")}
               </span>
             </li>
           ))}
           {Array.from({ length: 6 - snapshot.participants.length }).map(
             (_, index) => (
               <li className="empty" key={index}>
-                Freier Platz
+                {t("Freier Platz")}
               </li>
             ),
           )}
@@ -563,7 +586,7 @@ export function App() {
 
         <section className="settings">
           <label>
-            Runden
+            {t("Runden")}
             <input
               type="number"
               inputMode="numeric"
@@ -581,13 +604,13 @@ export function App() {
               }}
             />
           </label>
-          <span>Standard: 10</span>
+          <span>{t("Standard: 10")}</span>
         </section>
 
         {snapshot.room.status === "started" ? (
           <div className="started" role="status">
-            <strong>Partie gestartet</strong>
-            <span>Der erste Kartenzug folgt in Meilenstein M3.</span>
+            <strong>{t("Partie gestartet")}</strong>
+            <span>{t("Der erste Kartenzug folgt in Meilenstein M3.")}</span>
           </div>
         ) : (
           <div className="actions">
@@ -598,14 +621,14 @@ export function App() {
                 void command({ type: "lobby.setReady", ready: !me.ready })
               }
             >
-              {me.ready ? "Nicht mehr bereit" : "Ich bin bereit"}
+              {me.ready ? t("Nicht mehr bereit") : t("Ich bin bereit")}
             </button>
             {snapshot.you.isHost && (
               <button
                 disabled={pending || !online || !canStart}
                 onClick={() => void command({ type: "lobby.start" })}
               >
-                Partie starten
+                {t("Partie starten")}
               </button>
             )}
           </div>
@@ -622,9 +645,11 @@ export function App() {
           disabled={pending || snapshot.room.status !== "lobby"}
           onClick={() => void command({ type: "lobby.leave" })}
         >
-          Raum endgültig verlassen
+          {t("Raum endgültig verlassen")}
         </button>
-        <p className="sequence">Raumstand #{snapshot.room.sequence}</p>
+        <p className="sequence">
+          {t("Raumstand #{value}", { value: snapshot.room.sequence })}
+        </p>
       </section>
     </main>
   );
@@ -710,17 +735,34 @@ const cardGuideEntries: CardGuideEntry[] = [
   { rank: "A", suits: "♥ ♦ ♠ ♣", points: "1", action: "Keine Aktion" },
 ];
 
-function effectLabel(kind: string) {
-  return effectLabels[kind] ?? "Spezialfähigkeit";
+type Translate = (
+  text: string,
+  replacements?: Record<string, string | number>,
+) => string;
+
+function effectLabel(kind: string, t: Translate = (text) => text) {
+  return t(effectLabels[kind] ?? "Spezialfähigkeit");
 }
 
 export function initialViewTableHint(
   roundNumber: number,
   initialViewOpen: boolean,
+  t: Translate = (text, replacements) => {
+    if (!replacements) return text;
+    return Object.entries(replacements).reduce(
+      (value, [key, replacement]) =>
+        value.replaceAll(`{${key}}`, String(replacement)),
+      text,
+    );
+  },
 ) {
   return initialViewOpen
-    ? `Runde ${roundNumber} · Zwei nahe Karten ansehen und merken.`
-    : `Runde ${roundNumber} · Startansicht geschlossen. Auf Mitspieler warten.`;
+    ? t("Runde {round} · Zwei nahe Karten ansehen und merken.", {
+        round: roundNumber,
+      })
+    : t("Runde {round} · Startansicht geschlossen. Auf Mitspieler warten.", {
+        round: roundNumber,
+      });
 }
 
 type ActionFeedback = {
@@ -757,25 +799,29 @@ const actionLabels: Partial<Record<LobbyCommand["type"], string>> = {
   "game.interruption.abort": "Partie abbrechen",
 };
 
-function actionLabel(type: LobbyCommand["type"]) {
-  return actionLabels[type] ?? "Aktion";
+function actionLabel(
+  type: LobbyCommand["type"],
+  t: Translate = (text) => text,
+) {
+  return t(actionLabels[type] ?? "Aktion");
 }
 
 export function feedbackForRejection(
   ack: Pick<CommandAck, "error">,
   type: LobbyCommand["type"],
+  t: Translate = (text) => text,
 ) {
   const code = ack.error?.code;
-  if (code === "STALE_POSITION") return "Zielkarte inzwischen verändert.";
+  if (code === "STALE_POSITION") return t("Zielkarte inzwischen verändert.");
   if (code === "RATE_LIMITED")
-    return "Technisch gedrosselt – bitte kurz warten. Keine Spielstrafe.";
-  if (code === "CARD_HELD") return "Zielkarte ist gebunden.";
+    return t("Technisch gedrosselt – bitte kurz warten. Keine Spielstrafe.");
+  if (code === "CARD_HELD") return t("Zielkarte ist gebunden.");
   if (
     type === "game.react" &&
     (code === "INVALID_REACTION_WINDOW" || code === "REACTION_NOT_ALLOWED")
   )
-    return "Reaktionsfenster bereits verbraucht oder geschlossen.";
-  return ack.error?.message ?? "Aktion abgelehnt.";
+    return t("Reaktionsfenster bereits verbraucht oder geschlossen.");
+  return ack.error?.message ? t(ack.error.message) : t("Aktion abgelehnt.");
 }
 
 export type SelectionPurpose =
@@ -818,18 +864,20 @@ export function canSelectReactionTarget({
 function selectionPurposeLabel(
   purpose: SelectionPurpose,
   effect: NonNullable<RoundView["effects"]>[number] | undefined,
+  t: Translate = (text) => text,
 ) {
-  if (purpose === "transfer") return "Ausgleichskarte auswählen";
-  if (purpose === "reaction") return "Karte für Reaktion auswählen";
-  if (purpose === "swap") return "Eigene Karte zum Tauschen wählen";
+  if (purpose === "transfer") return t("Ausgleichskarte auswählen");
+  if (purpose === "reaction") return t("Karte für Reaktion auswählen");
+  if (purpose === "swap") return t("Eigene Karte zum Tauschen wählen");
   if (purpose === "effect") {
-    if (effect?.kind === "inspect-own") return "Eigene Karte ansehen";
-    if (effect?.kind === "inspect-opponent") return "Gegnerische Karte ansehen";
+    if (effect?.kind === "inspect-own") return t("Eigene Karte ansehen");
+    if (effect?.kind === "inspect-opponent")
+      return t("Gegnerische Karte ansehen");
     return effect?.targets.length
-      ? "Zweite Karte auswählen"
-      : "Erste Karte auswählen";
+      ? t("Zweite Karte auswählen")
+      : t("Erste Karte auswählen");
   }
-  return "Keine Kartenauswahl aktiv";
+  return t("Keine Kartenauswahl aktiv");
 }
 
 function GameScreen({
@@ -857,6 +905,7 @@ function GameScreen({
   actionFeedback: ActionFeedback | null;
   command: (value: LobbyCommand) => Promise<CommandAck | undefined>;
 }) {
+  const { t } = useI18n();
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [cardGuideOpen, setCardGuideOpen] = useState(false);
   const viewer = game.players.find(
@@ -883,7 +932,7 @@ function GameScreen({
     (playerId) =>
       snapshot.participants.find(
         (participant) => participant.playerId === playerId,
-      )?.name ?? "Spieler",
+      )?.name ?? t("Spieler"),
   );
 
   const send = async (
@@ -959,23 +1008,23 @@ function GameScreen({
     );
   };
   const tableHint = game.pendingTransfer
-    ? "Eigene Ausgleichskarte wählen."
+    ? t("Eigene Ausgleichskarte wählen.")
     : game.you.drawnCard
-      ? "Ablage oder eigene Karte antippen."
+      ? t("Ablage oder eigene Karte antippen.")
       : ownEffect?.phase === "viewing"
-        ? "Offene Karte schließen oder mit anderer Karte reagieren."
+        ? t("Offene Karte schließen oder mit anderer Karte reagieren.")
         : ownEffect?.phase === "deciding"
-          ? "Tauschen oder behalten."
+          ? t("Tauschen oder behalten.")
           : ownEffect?.phase === "selecting" && effectSelectionActive
-            ? `${effectLabel(ownEffect.kind)}: ${selectionPurposeLabel("effect", ownEffect)}.`
+            ? `${effectLabel(ownEffect.kind, t)}: ${selectionPurposeLabel("effect", ownEffect, t)}.`
             : ownEffect?.phase === "selecting" && canReactDirectly
-              ? "Erst reagieren oder rechts die Aktivität ausführen."
+              ? t("Erst reagieren oder rechts die Aktivität ausführen.")
               : game.reactionWindow
-                ? "Passende Karte direkt antippen."
+                ? t("Passende Karte direkt antippen.")
                 : isActive && !hasOpenEffect
-                  ? "Oberste Karte ziehen."
+                  ? t("Oberste Karte ziehen.")
                   : hasOpenEffect
-                    ? "Offene Aktion zuerst abschließen oder ablehnen."
+                    ? t("Offene Aktion zuerst abschließen oder ablehnen.")
                     : undefined;
   const effectAction = ownEffect ? (
     <EffectTimerFrame expiresAt={ownEffect.expiresAt}>
@@ -1000,7 +1049,7 @@ function GameScreen({
                   })
                 }
               >
-                An {participant.name}
+                {t("An {name}", { name: participant.name })}
               </button>
             ))}
         </div>
@@ -1012,7 +1061,9 @@ function GameScreen({
             disabled={pending || !online || effectSelectionActive}
             onClick={() => void activateOwnEffect()}
           >
-            {effectSelectionActive ? "Aktivität aktiv" : "Aktivität ausführen"}
+            {effectSelectionActive
+              ? t("Aktivität aktiv")
+              : t("Aktivität ausführen")}
           </button>
           <button
             className="secondary"
@@ -1021,7 +1072,7 @@ function GameScreen({
               send({ type: "game.effect.skip", effectId: ownEffect.id })
             }
           >
-            Ansehen überspringen
+            {t("Ansehen überspringen")}
           </button>
         </div>
       ) : ownEffect.phase === "selecting" ? (
@@ -1029,7 +1080,9 @@ function GameScreen({
           disabled={pending || !online || effectSelectionActive}
           onClick={() => void activateOwnEffect()}
         >
-          {effectSelectionActive ? "Aktivität aktiv" : "Aktivität ausführen"}
+          {effectSelectionActive
+            ? t("Aktivität aktiv")
+            : t("Aktivität ausführen")}
         </button>
       ) : ownEffect.kind === "inspect-swap" &&
         ownEffect.phase === "deciding" ? (
@@ -1044,7 +1097,7 @@ function GameScreen({
               })
             }
           >
-            Tauschen
+            {t("Tauschen")}
           </button>
           <button
             className="secondary"
@@ -1057,7 +1110,7 @@ function GameScreen({
               })
             }
           >
-            Behalten
+            {t("Behalten")}
           </button>
         </div>
       ) : null}
@@ -1165,39 +1218,39 @@ function GameScreen({
               }
             >
               {!networkOnline
-                ? "Verbindung unterbrochen"
+                ? t("Verbindung unterbrochen")
                 : syncing
-                  ? "Synchronisiere …"
-                  : "Online"}
+                  ? t("Synchronisiere …")
+                  : t("Online")}
             </span>
             <button
               className="small secondary card-guide-trigger"
               type="button"
               aria-haspopup="dialog"
-              aria-label="Kartenübersicht öffnen"
+              aria-label={t("Kartenübersicht öffnen")}
               onClick={() => {
                 setLeaveDialogOpen(false);
                 setCardGuideOpen(true);
               }}
             >
-              <span className="wide-label">Kartenübersicht</span>
+              <span className="wide-label">{t("Kartenübersicht")}</span>
               <span className="short-label" aria-hidden="true">
-                Karten
+                {t("Karten")}
               </span>
             </button>
             <button
               className="small secondary"
               type="button"
-              aria-label="Hauptmenü öffnen"
+              aria-label={t("Hauptmenü öffnen")}
               disabled={pending}
               onClick={() => {
                 setCardGuideOpen(false);
                 setLeaveDialogOpen(true);
               }}
             >
-              <span className="wide-label">Hauptmenü</span>
+              <span className="wide-label">{t("Hauptmenü")}</span>
               <span className="short-label" aria-hidden="true">
-                Menü
+                {t("Menü")}
               </span>
             </button>
           </div>
@@ -1205,16 +1258,18 @@ function GameScreen({
 
         {(control === "takeover-required" || control === "revoked") && (
           <section className="interruption-banner" role="status">
-            <strong>Spiel in anderem Tab geöffnet</strong>
+            <strong>{t("Spiel in anderem Tab geöffnet")}</strong>
             <p>
-              Dieser Tab zeigt den Tisch nur an und kann keine Aktionen senden.
+              {t(
+                "Dieser Tab zeigt den Tisch nur an und kann keine Aktionen senden.",
+              )}
             </p>
             <button
               type="button"
               disabled={pending || !networkOnline}
               onClick={onTakeover}
             >
-              Steuerung übernehmen
+              {t("Steuerung übernehmen")}
             </button>
           </section>
         )}
@@ -1223,15 +1278,17 @@ function GameScreen({
           <section className="interruption-banner" role="alert">
             <strong>
               {snapshot.interruption.status === "aborted"
-                ? "Partie abgebrochen"
-                : "Partie pausiert"}
+                ? t("Partie abgebrochen")
+                : t("Partie pausiert")}
             </strong>
             {snapshot.interruption.status !== "aborted" && (
               <p>
-                Fehlend: {missingNames.join(", ") || "niemand"}.
+                {t("Fehlend: {names}.", {
+                  names: missingNames.join(", ") || t("niemand"),
+                })}
                 {snapshot.interruption.status === "decision"
-                  ? " Die Wiederbeitrittsfrist ist abgelaufen."
-                  : " Wiederbeitritt ist 90 Sekunden lang möglich."}
+                  ? ` ${t("Die Wiederbeitrittsfrist ist abgelaufen.")}`
+                  : ` ${t("Wiederbeitritt ist 90 Sekunden lang möglich.")}`}
               </p>
             )}
             {snapshot.interruption.status === "decision" &&
@@ -1247,7 +1304,7 @@ function GameScreen({
                       })
                     }
                   >
-                    Weitere 90 Sekunden warten
+                    {t("Weitere 90 Sekunden warten")}
                   </button>
                   <button
                     className="secondary"
@@ -1260,7 +1317,7 @@ function GameScreen({
                       })
                     }
                   >
-                    Partie abbrechen
+                    {t("Partie abbrechen")}
                   </button>
                 </div>
               )}
@@ -1289,18 +1346,24 @@ function GameScreen({
               online={online}
               pending={pending}
               onDraw={() => send({ type: "game.draw", turnId: game.turn.id })}
-              hint={initialViewTableHint(game.number, game.you.initialViewOpen)}
+              hint={initialViewTableHint(
+                game.number,
+                game.you.initialViewOpen,
+                t,
+              )}
             />
             {game.you.initialViewOpen ? (
               <button
                 disabled={pending || !online}
                 onClick={() => send({ type: "game.closeInitialView" })}
               >
-                Karten verdecken und schließen
+                {t("Karten verdecken und schließen")}
               </button>
             ) : (
               <p className="waiting">
-                Warte auf {waitingFor.map((player) => player.name).join(", ")} …
+                {t("Warte auf {names} …", {
+                  names: waitingFor.map((player) => player.name).join(", "),
+                })}
               </p>
             )}
           </section>
@@ -1318,8 +1381,12 @@ function GameScreen({
 
             {viewerEliminated && (
               <p className="notice eliminated-notice" role="status">
-                Du bist ausgeschieden. Deine Endpunktzahl beträgt{" "}
-                {viewer?.finalScore}.
+                {t(
+                  "Du bist ausgeschieden. Deine Endpunktzahl beträgt {score}.",
+                  {
+                    score: viewer?.finalScore ?? 0,
+                  },
+                )}
               </p>
             )}
 
@@ -1337,29 +1404,33 @@ function GameScreen({
                       : "!"}
                 </span>
                 {actionFeedback.kind === "sending"
-                  ? `${actionFeedback.text} gesendet · wartet auf Bestätigung`
+                  ? `${actionFeedback.text} ${t("gesendet · wartet auf Bestätigung")}`
                   : actionFeedback.text}
               </div>
             )}
 
             {game.kabuCallerId && (
               <section className="turn-status" aria-live="polite">
-                <p className="eyebrow">Kabu-Schlussphase</p>
+                <p className="eyebrow">{t("Kabu-Schlussphase")}</p>
                 <strong>
-                  {snapshot.participants.find(
-                    (p) => p.playerId === game.kabuCallerId,
-                  )?.name ?? "Spieler"}{" "}
-                  hat Kabu angesagt.
+                  {t("{name} hat Kabu angesagt.", {
+                    name:
+                      snapshot.participants.find(
+                        (p) => p.playerId === game.kabuCallerId,
+                      )?.name ?? t("Spieler"),
+                  })}
                 </strong>
                 <p>
-                  Noch ausstehend:{" "}
-                  {(game.pendingFinalTurns ?? [])
-                    .map(
-                      (id) =>
-                        snapshot.participants.find((p) => p.playerId === id)
-                          ?.name ?? id,
-                    )
-                    .join(", ") || "keine"}
+                  {t("Noch ausstehend: {names}", {
+                    names:
+                      (game.pendingFinalTurns ?? [])
+                        .map(
+                          (id) =>
+                            snapshot.participants.find((p) => p.playerId === id)
+                              ?.name ?? id,
+                        )
+                        .join(", ") || t("keine"),
+                  })}
                 </p>
               </section>
             )}
@@ -1374,8 +1445,9 @@ function GameScreen({
         )}
         {game.phase === "provisional-end" && (
           <p className="notice" role="status">
-            Vorläufiges Rundenende: Bereits ausgelöste Pflichtaktionen werden
-            noch abgeschlossen.
+            {t(
+              "Vorläufiges Rundenende: Bereits ausgelöste Pflichtaktionen werden noch abgeschlossen.",
+            )}
           </p>
         )}
 
@@ -1386,7 +1458,9 @@ function GameScreen({
         )}
         {import.meta.env.VITE_KABU_TEST_SCENARIOS === "true" && (
           <details className="table-help">
-            <summary>Entwicklungs-Testszenario laden / zurücksetzen</summary>
+            <summary>
+              {t("Entwicklungs-Testszenario laden / zurücksetzen")}
+            </summary>
             <div className="actions">
               {[
                 "ability-2",
@@ -1427,13 +1501,16 @@ function GameScreen({
             </div>
           </details>
         )}
-        <p className="sequence">Raumstand #{snapshot.room.sequence}</p>
+        <p className="sequence">
+          {t("Raumstand #{value}", { value: snapshot.room.sequence })}
+        </p>
       </section>
     </main>
   );
 }
 
 export function CardGuideDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -1460,37 +1537,37 @@ export function CardGuideDialog({ onClose }: { onClose: () => void }) {
       >
         <header className="card-guide-header">
           <div>
-            <p className="eyebrow">Spickzettel</p>
-            <h2 id="card-guide-title">Kartenübersicht</h2>
+            <p className="eyebrow">{t("Spickzettel")}</p>
+            <h2 id="card-guide-title">{t("Kartenübersicht")}</h2>
           </div>
           <button
             ref={closeButtonRef}
             className="card-guide-close"
             type="button"
-            aria-label="Kartenübersicht schließen"
+            aria-label={t("Kartenübersicht schließen")}
             onClick={onClose}
           >
             ×
           </button>
         </header>
         <p id="card-guide-description" className="card-guide-note">
-          Aktionen werden nur ausgelöst, wenn du eine frisch gezogene Karte
-          direkt ablegst. Beim Tauschen oder Reagieren lösen Karten keine Aktion
-          aus.
+          {t(
+            "Aktionen werden nur ausgelöst, wenn du eine frisch gezogene Karte direkt ablegst. Beim Tauschen oder Reagieren lösen Karten keine Aktion aus.",
+          )}
         </p>
         <div className="card-guide-columns" aria-hidden="true">
-          <span>Karte</span>
-          <span>Punkte</span>
-          <span>Aktion</span>
+          <span>{t("Karte")}</span>
+          <span>{t("Punkte")}</span>
+          <span>{t("Aktion")}</span>
         </div>
         <ul className="card-guide-list">
           {cardGuideEntries.map((entry) => (
             <li key={`${entry.rank}-${entry.suits}`}>
               <div
                 className={`guide-card${entry.rank.includes("–") ? " grouped" : ""}`}
-                aria-label={`${entry.rank} ${entry.suits}`}
+                aria-label={`${t(entry.rank)} ${entry.suits}`}
               >
-                <strong>{entry.rank}</strong>
+                <strong>{t(entry.rank)}</strong>
                 <span aria-hidden="true">
                   {entry.suits.split(" ").map((suit) => (
                     <span
@@ -1503,7 +1580,7 @@ export function CardGuideDialog({ onClose }: { onClose: () => void }) {
                 </span>
               </div>
               <strong className="card-guide-points">{entry.points}</strong>
-              <span className="card-guide-action">{entry.action}</span>
+              <span className="card-guide-action">{t(entry.action)}</span>
             </li>
           ))}
         </ul>
@@ -1521,6 +1598,7 @@ export function LeaveRoundDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="dialog-backdrop" role="presentation">
       <section
@@ -1530,10 +1608,10 @@ export function LeaveRoundDialog({
         aria-labelledby="leave-round-title"
         aria-describedby="leave-round-description"
       >
-        <p className="eyebrow">Runde verlassen</p>
-        <h2 id="leave-round-title">Zurück zum Hauptmenü?</h2>
+        <p className="eyebrow">{t("Runde verlassen")}</p>
+        <h2 id="leave-round-title">{t("Zurück zum Hauptmenü?")}</h2>
         <p id="leave-round-description">
-          Bist du sicher, dass du die laufende Runde verlassen möchtest?
+          {t("Bist du sicher, dass du die laufende Runde verlassen möchtest?")}
         </p>
         <div className="dialog-actions">
           <button
@@ -1543,10 +1621,10 @@ export function LeaveRoundDialog({
             autoFocus
             onClick={onCancel}
           >
-            In der Runde bleiben
+            {t("In der Runde bleiben")}
           </button>
           <button type="button" disabled={pending} onClick={onConfirm}>
-            {pending ? "Wird verlassen …" : "Runde verlassen"}
+            {pending ? t("Wird verlassen …") : t("Runde verlassen")}
           </button>
         </div>
       </section>
@@ -1607,26 +1685,32 @@ export function RoundResultPanel({
   online: boolean;
   onReady: () => void;
 }) {
+  const { t } = useI18n();
   const result = game.completedRounds?.at(-1);
   const participant = (playerId: string) =>
     snapshot.participants.find((item) => item.playerId === playerId)?.name ??
-    "Spieler";
+    t("Spieler");
   return (
     <section className="round-result" aria-live="polite">
       <p className="eyebrow">
         {game.phase === "game-over"
-          ? "Partie beendet"
-          : `Runde ${game.number} beendet`}
+          ? t("Partie beendet")
+          : t("Runde {round} beendet", { round: game.number })}
       </p>
       <h2>
         {game.phase === "game-over"
-          ? `Gewonnen: ${(game.winners ?? []).map(participant).join(", ")}`
-          : `Zwischenstand · ${game.number} von ${game.roundCount ?? snapshot.room.roundCount}`}
+          ? t("Gewonnen: {names}", {
+              names: (game.winners ?? []).map(participant).join(", "),
+            })
+          : t("Zwischenstand · {round} von {count}", {
+              round: game.number,
+              count: game.roundCount ?? snapshot.room.roundCount,
+            })}
       </h2>
       <div
         className="score-table"
         role="table"
-        aria-label="Rundenergebnis und Gesamtstand"
+        aria-label={t("Rundenergebnis und Gesamtstand")}
       >
         {game.players.map((player) => {
           const score = result?.scores.find(
@@ -1636,19 +1720,38 @@ export function RoundResultPanel({
             <div className="score-row" role="row" key={player.playerId}>
               <strong>{participant(player.playerId)}</strong>
               {player.eliminated ? (
-                <span>Ausgeschieden · Endstand: {player.finalScore}</span>
+                <span>
+                  {t("Ausgeschieden · Endstand: {score}", {
+                    score: player.finalScore ?? 0,
+                  })}
+                </span>
               ) : score ? (
                 <>
-                  <span>Kartenpunkte: {score.cardPoints}</span>
-                  <span>Kabu-Strafe: +{score.kabuPenalty}</span>
-                  <span>Runde: {score.roundPoints}</span>
                   <span>
-                    Gesamt:{" "}
-                    {game.totalScores?.[player.playerId] ?? score.roundPoints}
+                    {t("Kartenpunkte: {score}", { score: score.cardPoints })}
+                  </span>
+                  <span>
+                    {t("Kabu-Strafe: +{score}", {
+                      score: score.kabuPenalty,
+                    })}
+                  </span>
+                  <span>
+                    {t("Runde: {score}", { score: score.roundPoints })}
+                  </span>
+                  <span>
+                    {t("Gesamt: {score}", {
+                      score:
+                        game.totalScores?.[player.playerId] ??
+                        score.roundPoints,
+                    })}
                   </span>
                 </>
               ) : (
-                <span>Gesamt: {game.totalScores?.[player.playerId] ?? 0}</span>
+                <span>
+                  {t("Gesamt: {score}", {
+                    score: game.totalScores?.[player.playerId] ?? 0,
+                  })}
+                </span>
               )}
             </div>
           );
@@ -1659,7 +1762,7 @@ export function RoundResultPanel({
           {game.players.find(
             (player) => player.playerId === snapshot.you.playerId,
           )?.eliminated ? (
-            <p>Du bist ausgeschieden und schaust nur noch zu.</p>
+            <p>{t("Du bist ausgeschieden und schaust nur noch zu.")}</p>
           ) : (
             <button
               disabled={
@@ -1670,13 +1773,15 @@ export function RoundResultPanel({
               onClick={onReady}
             >
               {(game.nextRoundReady ?? []).includes(snapshot.you.playerId)
-                ? "Bereit – warte auf die anderen"
-                : "Bereit für nächste Runde"}
+                ? t("Bereit – warte auf die anderen")
+                : t("Bereit für nächste Runde")}
             </button>
           )}
           <p>
-            {game.nextRoundReady?.length ?? 0} von{" "}
-            {game.players.filter((player) => !player.eliminated).length} bereit
+            {t("{ready} von {total} bereit", {
+              ready: game.nextRoundReady?.length ?? 0,
+              total: game.players.filter((player) => !player.eliminated).length,
+            })}
           </p>
         </div>
       )}
@@ -1692,6 +1797,7 @@ export function RoundResultPanel({
 }
 
 function FinalReactionCountdown({ expiresAt }: { expiresAt: number }) {
+  const { t } = useI18n();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 100);
@@ -1704,7 +1810,9 @@ function FinalReactionCountdown({ expiresAt }: { expiresAt: number }) {
       role="timer"
       aria-live="polite"
     >
-      Letztes Kabu-Reaktionsfenster: {(milliseconds / 1_000).toFixed(1)} s
+      {t("Letztes Kabu-Reaktionsfenster: {seconds} s", {
+        seconds: (milliseconds / 1_000).toFixed(1),
+      })}
     </p>
   );
 }
@@ -1716,6 +1824,7 @@ export function EffectTimerFrame({
   expiresAt: number | undefined;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (expiresAt === undefined) return;
@@ -1729,7 +1838,9 @@ export function EffectTimerFrame({
       className="effect-timer-frame"
       style={{ "--effect-angle": `${progress * 360}deg` } as CSSProperties}
       role="timer"
-      aria-label={`${Math.ceil(milliseconds / 1_000)} Sekunden für die Aktivität verbleibend`}
+      aria-label={t("{seconds} Sekunden für die Aktivität verbleibend", {
+        seconds: Math.ceil(milliseconds / 1_000),
+      })}
     >
       {children}
     </div>
@@ -1776,6 +1887,7 @@ export function GameTable({
     occupancyVersion: number,
   ) => void;
 }) {
+  const { t } = useI18n();
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 390 : window.innerWidth,
   );
@@ -1851,7 +1963,7 @@ export function GameTable({
         data-player-id={player.playerId}
         data-seat={player.seat}
         key={player.playerId}
-        aria-label={`Kartenfeld von ${participant?.name ?? "Spieler"}${activePlayer ? ", aktiver Spieler" : ""}`}
+        aria-label={`${t("Kartenfeld von {name}", { name: participant?.name ?? t("Spieler") })}${activePlayer ? `, ${t("aktiver Spieler")}` : ""}`}
       >
         <header>
           <strong>
@@ -1861,16 +1973,23 @@ export function GameTable({
             >
               ▶
             </span>
-            {participant?.name ?? "Spieler"}
-            {own ? " (du)" : ""}
+            {participant?.name ?? t("Spieler")}
+            {own ? ` (${t("du")})` : ""}
           </strong>
           {player.eliminated && (
-            <span>Ausgeschieden · {player.finalScore} Punkte</span>
+            <span>
+              {t("Ausgeschieden · {score} Punkte", {
+                score: player.finalScore ?? 0,
+              })}
+            </span>
           )}
         </header>
         {player.eliminated ? (
-          <p className="eliminated-seat" aria-label="Spieler ausgeschieden">
-            Ausgeschieden
+          <p
+            className="eliminated-seat"
+            aria-label={t("Spieler ausgeschieden")}
+          >
+            {t("Ausgeschieden")}
           </p>
         ) : (
           <div
@@ -1885,7 +2004,7 @@ export function GameTable({
               <div className={own ? "own-card-field" : "player-card-field"}>
                 <PlayerField
                   positions={player.positions}
-                  ownerName={`${participant?.name ?? "Spieler"}${own ? " (du)" : ""}`}
+                  ownerName={`${participant?.name ?? t("Spieler")}${own ? ` (${t("du")})` : ""}`}
                   publicReveals={game.publicReveals ?? []}
                   privateCards={
                     privateEffect?.cards.filter(
@@ -1914,12 +2033,12 @@ export function GameTable({
             {own && (
               <div
                 className={`drawn-card-slot${drawnCard ? " occupied" : ""}`}
-                aria-label={drawnCard ? "Gezogene Karte" : undefined}
+                aria-label={drawnCard ? t("Gezogene Karte") : undefined}
                 aria-hidden={drawnCard ? undefined : true}
               >
                 {drawnCard && (
                   <>
-                    <span className="drawn-card-label">Gezogen</span>
+                    <span className="drawn-card-label">{t("Gezogen")}</span>
                     <CardFace card={drawnCard} />
                   </>
                 )}
@@ -1944,16 +2063,16 @@ export function GameTable({
   return (
     <section
       className={`game-table players-${game.players.length}`}
-      aria-label="Spieltisch"
+      aria-label={t("Spieltisch")}
       style={tableStyle}
     >
       <div
         className={`opponent-fields opponents-${opponents.length}`}
-        aria-label="Mitspieler in Zugreihenfolge"
+        aria-label={t("Mitspieler in Zugreihenfolge")}
       >
         {opponents.map((player) => field(player, false))}
       </div>
-      <div className="table-center" aria-label="Tischmitte">
+      <div className="table-center" aria-label={t("Tischmitte")}>
         <div className={`table-piles${centerAction ? " has-action" : ""}`}>
           <div className="pile-hint-slot">
             {hint && (
@@ -1976,8 +2095,12 @@ export function GameTable({
               onClick={onDraw}
               aria-label={
                 isActive && game.turn.phase === "awaiting-draw"
-                  ? `Oberste Karte ziehen, ${game.drawPileCount} Karten übrig`
-                  : `Nachziehstapel, ${game.drawPileCount} Karten übrig`
+                  ? t("Oberste Karte ziehen, {count} Karten übrig", {
+                      count: game.drawPileCount,
+                    })
+                  : t("Nachziehstapel, {count} Karten übrig", {
+                      count: game.drawPileCount,
+                    })
               }
             >
               <span className="stack-card stack-card-back" aria-hidden="true" />
@@ -1994,10 +2117,10 @@ export function GameTable({
             className={`discard-pile${game.discardTop ? "" : " empty"}${drawnCard ? " accepts-drawn" : ""}`}
             aria-label={
               drawnCard
-                ? "Gezogene Karte auf den Ablagestapel legen"
+                ? t("Gezogene Karte auf den Ablagestapel legen")
                 : game.discardTop
-                  ? "Ablagestapel"
-                  : "Ablagestapel leer"
+                  ? t("Ablagestapel")
+                  : t("Ablagestapel leer")
             }
             disabled={!drawnCard || pending || !online}
             onClick={onDiscardDrawn}
@@ -2005,7 +2128,7 @@ export function GameTable({
             {game.discardTop ? (
               <CardFace card={game.discardTop} />
             ) : (
-              <span className="empty-discard">Leer</span>
+              <span className="empty-discard">{t("Leer")}</span>
             )}
           </button>
           {centerAction && (
@@ -2016,10 +2139,23 @@ export function GameTable({
         </div>
         <div className="reaction-status" role="status">
           {!game.reactionWindow
-            ? "Reaktionsfenster: keines"
+            ? t("Reaktionsfenster: keines")
             : game.reactionWindow.status === "open"
-              ? `Reaktionsfenster offen · Rang ${rankLabels[game.reactionWindow.rank] ?? game.reactionWindow.rank}`
-              : `Reaktionsfenster verbraucht · Rang ${rankLabels[game.reactionWindow.rank] ?? game.reactionWindow.rank} · weitere Versuche geben eine Strafkarte`}
+              ? t("Reaktionsfenster offen · Rang {rank}", {
+                  rank: t(
+                    rankLabels[game.reactionWindow.rank] ??
+                      game.reactionWindow.rank,
+                  ),
+                })
+              : t(
+                  "Reaktionsfenster verbraucht · Rang {rank} · weitere Versuche geben eine Strafkarte",
+                  {
+                    rank: t(
+                      rankLabels[game.reactionWindow.rank] ??
+                        game.reactionWindow.rank,
+                    ),
+                  },
+                )}
         </div>
       </div>
       <div className="own-table-field">{field(ownPlayer, true)}</div>
@@ -2048,6 +2184,7 @@ function PlayerField({
   markSelectable?: boolean;
   onSelect?: (positionId: string, occupancyVersion: number) => void;
 }) {
+  const { t } = useI18n();
   const occupiedPositions = positions.filter((position) => position.occupied);
   const orderedColumns = visualColumnOrder(
     positions.map((position) => position.column),
@@ -2082,7 +2219,7 @@ function PlayerField({
             const privateCard = privateCards.find(
               (item) => item.target.positionId === position.id,
             );
-            const rowLabel = row === "near" ? "Nahe" : "Ferne";
+            const rowLabel = row === "near" ? t("Nahe") : t("Ferne");
             return (
               <button
                 type="button"
@@ -2096,7 +2233,7 @@ function PlayerField({
                   onSelect?.(position.id, position.occupancyVersion);
                 }}
                 key={position.id}
-                aria-label={`${!position.card && !privateCard ? "Verdeckte Karte" : "Aufgedeckte Karte"} von ${ownerName}, ${rowLabel.toLowerCase()} ${position.column + 1}${position.held ? ", gebunden" : ""}${reveal ? (reveal.reason === "too-late" ? ", zu spät – Strafkarte erhalten" : ", falsche Karte – Strafkarte erhalten") : ""}${privateCard && onClosePrivateView ? ", zum Schließen antippen" : selectable(position) ? ", auswählen" : ""}`}
+                aria-label={`${!position.card && !privateCard ? t("Verdeckte Karte") : t("Aufgedeckte Karte")} ${t("von")} ${ownerName}, ${rowLabel.toLowerCase()} ${position.column + 1}${position.held ? `, ${t("gebunden")}` : ""}${reveal ? (reveal.reason === "too-late" ? `, ${t("zu spät – Strafkarte erhalten")}` : `, ${t("falsche Karte – Strafkarte erhalten")}`) : ""}${privateCard && onClosePrivateView ? `, ${t("zum Schließen antippen")}` : selectable(position) ? `, ${t("auswählen")}` : ""}`}
                 data-position-id={position.id}
                 data-occupancy-version={position.occupancyVersion}
                 style={{
@@ -2105,15 +2242,18 @@ function PlayerField({
                 }}
               >
                 {position.held && (
-                  <span className="position-marker" aria-label="Karte gehalten">
-                    Gehalten
+                  <span
+                    className="position-marker"
+                    aria-label={t("Karte gehalten")}
+                  >
+                    {t("Gehalten")}
                   </span>
                 )}
                 {reveal && (
                   <span className="position-marker reveal-marker">
                     {reveal.reason === "too-late"
-                      ? "Zu spät · Strafkarte"
-                      : "Falsche Karte · Strafkarte"}
+                      ? t("Zu spät · Strafkarte")
+                      : t("Falsche Karte · Strafkarte")}
                   </span>
                 )}
                 {privateCard ? (
@@ -2139,12 +2279,13 @@ function CardFace({
 }: {
   card: { suit: string; rank: string; value: number };
 }) {
+  const { t } = useI18n();
   const red = card.suit === "hearts" || card.suit === "diamonds";
   return (
     <span className={`card-face ${red ? "red" : "black"}`}>
-      <strong>{rankLabels[card.rank] ?? card.rank}</strong>
+      <strong>{t(rankLabels[card.rank] ?? card.rank)}</strong>
       <span>{suitLabels[card.suit]}</span>
-      <small>{card.value} Punkte</small>
+      <small>{t("{value} Punkte", { value: card.value })}</small>
     </span>
   );
 }
@@ -2156,6 +2297,7 @@ function TimedCardFace({
   card: { suit: string; rank: string; value: number };
   expiresAt: number;
 }) {
+  const { t } = useI18n();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 100);
@@ -2167,7 +2309,9 @@ function TimedCardFace({
       className="timed-reveal"
       style={{ "--reveal-angle": `${progress * 360}deg` } as CSSProperties}
       role="timer"
-      aria-label={`${Math.ceil(Math.max(0, expiresAt - now) / 1_000)} Sekunden verbleibend`}
+      aria-label={t("{seconds} Sekunden verbleibend", {
+        seconds: Math.ceil(Math.max(0, expiresAt - now) / 1_000),
+      })}
     >
       <CardFace card={card} />
     </span>
