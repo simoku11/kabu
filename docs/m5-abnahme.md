@@ -88,7 +88,7 @@ trotz leerem Feld Kartenpunkte.
    Verlängerung, Client-Uhr entscheidet oder normale Fenster erhalten einen
    solchen Countdown.
 6. **Kabu-Gleichstandsstrafe – `m5-kabu-tie`.** A und B besitzen je eine 4. A
-   sagt Kabu, B zieht das Ass und legt es direkt wieder ab. Nach drei Sekunden
+   sagt Kabu, B zieht das Ass und legt es direkt wieder ab. Nach sechs Sekunden
    zeigt die Wertung für beide 4 Kartenpunkte, für A zusätzlich +10 und damit
    14 Rundenpunkte. Fehler: Gleichstand ohne Strafe oder vermischte Anzeige
    von Kartenwert und Strafe.

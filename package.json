@@ -10,6 +10,7 @@
   "scripts": {
     "build": "pnpm --filter @kabu/protocol build && pnpm --filter @kabu/game-core build && pnpm --filter @kabu/web build && pnpm --filter @kabu/server build",
     "dev": "pnpm --parallel --filter @kabu/web --filter @kabu/server dev",
+    "dev:two": "node scripts/dev-two-players.mjs",
     "load:m8": "pnpm --filter @kabu/server load:m8",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

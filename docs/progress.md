@@ -65,7 +65,7 @@ Partiesieg bleiben M5. `awaiting-m5` zeigt deshalb nur ein erkanntes Ende an.
 - [x] endgültiges Null-Karten-Ende mit Pflichtabwicklung, Rettung und D6
 - [x] Kabu am Zugbeginn und explizite geordnete Schlusszüge
 - [x] Aussetzen als Verbrauch eines Schlusszugs
-- [x] serverseitiges letztes Reaktionsfenster von exakt 3.000 ms
+- [x] serverseitiges letztes Reaktionsfenster von exakt 6.000 ms
 - [x] getrennte Kartenpunkte, Kabu-Strafe und Rundensumme
 - [x] einmalige Addition zum Gesamtstand und öffentliche Ergebnisansicht
 - [x] bewusste Allseitig-bereit-Fortsetzung und Startspielerrotation

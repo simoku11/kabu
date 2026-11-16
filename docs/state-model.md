@@ -76,7 +76,7 @@ enthalten.
 
 - `effects[]`: Effekt-ID, Inhaber, Art, Phase `selecting`/`viewing`/`deciding`
   und konkret gehaltene Positionsbelegungen. Private Ansichten tragen eine
-  serverseitige Ablaufzeit von 10 Sekunden; ein Timeout schließt eine
+  serverseitige Ablaufzeit von 20 Sekunden; ein Timeout schließt eine
   Ansehfähigkeit beziehungsweise wählt beim schwarzen König „Behalten“.
 - `reactionWindow`: eigene ID, Referenzrang und `open`/`consumed`; nur eine
   reguläre Ablage ersetzt es. `consumed` sperrt die Zielauswahl nicht: Jeder
@@ -107,3 +107,9 @@ enthalten.
 `kabuCallerId` und die geordnete Liste `pendingFinalTurns` bilden die
 Schlussphase unabhängig von Effekten und Reaktionen ab. `completedRounds` ist
 das Wertungsjournal; dessen Existenz verhindert eine zweite Addition.
+
+`lastAction` ist eine optionale, wertfreie Darstellungsreferenz auf die zuletzt
+bestätigte Kartenaktion. Sie darf Spieler- und öffentliche Positionskennungen,
+aber weder Karten-ID noch verdeckten Wert enthalten. Sie ändert keine
+Zulässigkeit, Bindung oder Frist und kann bei alten gespeicherten Snapshots
+fehlen.

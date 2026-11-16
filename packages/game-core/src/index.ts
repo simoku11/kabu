@@ -73,7 +73,7 @@ export type EffectKind =
   | "blind-swap"
   | "give-card"
   | "inspect-swap";
-export const PRIVATE_VIEW_DURATION_MS = 10_000;
+export const PRIVATE_VIEW_DURATION_MS = 20_000;
 export interface EffectState {
   id: string;
   ownerPlayerId: string;
@@ -88,7 +88,7 @@ export interface ReactionWindow {
   rank: Rank;
   status: "open" | "consumed";
 }
-export const FINAL_REACTION_DURATION_MS = 3_000;
+export const FINAL_REACTION_DURATION_MS = 6_000;
 export interface PlayerRoundScore {
   playerId: string;
   cardPoints: number;
@@ -115,6 +115,33 @@ export interface PublicReveal {
   expiresAt: number;
   reason?: "wrong-card" | "too-late";
 }
+export type PublicAction =
+  | { id: string; kind: "draw" | "discard-drawn"; actorPlayerId: string }
+  | {
+      id: string;
+      kind: "swap-drawn" | "inspect" | "reaction" | "penalty";
+      actorPlayerId: string;
+      source: PositionTarget;
+    }
+  | {
+      id: string;
+      kind: "ability-swap" | "transfer";
+      actorPlayerId: string;
+      source: PositionTarget;
+      target: PositionTarget;
+    }
+  | {
+      id: string;
+      kind: "keep";
+      actorPlayerId: string;
+      targets: PositionTarget[];
+    }
+  | {
+      id: string;
+      kind: "add-card";
+      actorPlayerId: string;
+      targetPlayerId: string;
+    };
 export interface RoundState {
   dataVersion: 4;
   rulesVersion: RulesVersion;
@@ -139,6 +166,7 @@ export interface RoundState {
   reactionWindow: ReactionWindow | null;
   pendingTransfers: PendingTransfer[];
   publicReveals: PublicReveal[];
+  lastAction?: PublicAction;
   nextEntityNumber: number;
   restartCount: number;
   lastRestartReason?: "draw-pile-exhausted";
@@ -240,6 +268,7 @@ export interface RoundView {
     expiresAt: number;
     reason: "wrong-card" | "too-late";
   }>;
+  lastAction?: PublicAction;
   restartCount: number;
   lastRestartReason?: "draw-pile-exhausted";
   roundCount: number;
@@ -898,6 +927,7 @@ export function drawCard(
     return { ok: true, state: restartAfterExhaustion(next, random) };
   next.drawnCard = { playerId, cardId: next.drawPile.pop()! };
   next.turn.phase = "awaiting-decision";
+  next.lastAction = { id: next.turn.id, kind: "draw", actorPlayerId: playerId };
   return { ok: true, state: next };
 }
 function advanceTurn(state: RoundState): void {
@@ -1048,6 +1078,11 @@ export function discardDrawn(
     abilityEligible: true,
   });
   next.drawnCard = null;
+  next.lastAction = {
+    id: `${turnId}:discard`,
+    kind: "discard-drawn",
+    actorPlayerId: playerId,
+  };
   advanceTurn(next);
   openReactionWindow(next, discarded);
   addEffectForDirectDiscard(next, playerId, discarded, random, now);
@@ -1091,6 +1126,16 @@ export function swapDrawn(
   const discarded = nextPosition.cardId!;
   nextPosition.cardId = next.drawnCard!.cardId;
   nextPosition.occupancyVersion += 1;
+  next.lastAction = {
+    id: `${turnId}:swap`,
+    kind: "swap-drawn",
+    actorPlayerId: playerId,
+    source: {
+      playerId,
+      positionId: target.positionId,
+      occupancyVersion: target.occupancyVersion,
+    },
+  };
   next.drawnCard = null;
   next.discardPile.push({
     cardId: discarded,
@@ -1278,11 +1323,24 @@ export function selectEffectPosition(
     nextEffect.kind === "inspect-opponent"
   ) {
     nextEffect.phase = "viewing";
+    next.lastAction = {
+      id: `${effectId}:inspect:${target.positionId}:${target.occupancyVersion}`,
+      kind: "inspect",
+      actorPlayerId: playerId,
+      source: target,
+    };
   } else if (
     nextEffect.targets.length === 2 &&
     nextEffect.kind === "blind-swap"
   ) {
     swapEffectTargets(next, nextEffect);
+    next.lastAction = {
+      id: `${effectId}:swap`,
+      kind: "ability-swap",
+      actorPlayerId: playerId,
+      source: nextEffect.targets[0]!,
+      target: nextEffect.targets[1]!,
+    };
     next.effects = next.effects.filter((item) => item.id !== effectId);
     settleProvisionalEnd(next);
   } else if (nextEffect.targets.length === 2) {
@@ -1344,6 +1402,12 @@ export function skipEffect(
       "Dieser Effekt kann nicht übersprungen werden.",
     );
   const next = structuredClone(state);
+  next.lastAction = {
+    id: `${effectId}:close`,
+    kind: "keep",
+    actorPlayerId: playerId,
+    targets: effect.targets.map((target) => ({ ...target })),
+  };
   next.effects = next.effects.filter((item) => item.id !== effectId);
   settleProvisionalEnd(next);
   return { ok: true, state: next };
@@ -1392,7 +1456,23 @@ export function decideInspectSwap(
     );
   const next = structuredClone(state);
   const nextEffect = next.effects.find((item) => item.id === effectId)!;
-  if (swap) swapEffectTargets(next, nextEffect);
+  if (swap) {
+    swapEffectTargets(next, nextEffect);
+    next.lastAction = {
+      id: `${effectId}:swap`,
+      kind: "ability-swap",
+      actorPlayerId: playerId,
+      source: nextEffect.targets[0]!,
+      target: nextEffect.targets[1]!,
+    };
+  } else {
+    next.lastAction = {
+      id: `${effectId}:keep`,
+      kind: "keep",
+      actorPlayerId: playerId,
+      targets: nextEffect.targets.map((target) => ({ ...target })),
+    };
+  }
   next.effects = next.effects.filter((item) => item.id !== effectId);
   settleProvisionalEnd(next);
   return { ok: true, state: next };
@@ -1448,6 +1528,12 @@ export function selectEffectPlayer(
   result.state.effects = result.state.effects.filter(
     (item) => item.id !== effectId,
   );
+  result.state.lastAction = {
+    id: `${effectId}:give:${targetPlayerId}`,
+    kind: "add-card",
+    actorPlayerId: playerId,
+    targetPlayerId,
+  };
   settleProvisionalEnd(result.state);
   return result;
 }
@@ -1540,6 +1626,12 @@ export function reactWithPosition(
     const penalty = giveAdditionalCard(next, playerId, random);
     if (!penalty.ok)
       return { ok: true, state: restartAfterExhaustion(next, random) };
+    penalty.state.lastAction = {
+      id: `${windowId}:penalty:${target.positionId}:${target.occupancyVersion}`,
+      kind: "penalty",
+      actorPlayerId: playerId,
+      source: target,
+    };
     return penalty;
   }
 
@@ -1552,6 +1644,12 @@ export function reactWithPosition(
     abilityEligible: false,
   });
   next.reactionWindow = { ...window, status: "consumed" };
+  next.lastAction = {
+    id: `${windowId}:reaction:${target.positionId}:${target.occupancyVersion}`,
+    kind: "reaction",
+    actorPlayerId: playerId,
+    source: target,
+  };
   if (target.playerId !== playerId) {
     next.pendingTransfers.push({
       id: nextId(next, "transfer"),
@@ -1603,6 +1701,17 @@ export function completeTransfer(
   destination.occupancyVersion += 1;
   source.cardId = null;
   source.occupancyVersion += 1;
+  next.lastAction = {
+    id: `${transferId}:complete`,
+    kind: "transfer",
+    actorPlayerId: playerId,
+    source: target,
+    target: {
+      playerId: transfer.recipientPlayerId,
+      positionId: transfer.recipientPositionId,
+      occupancyVersion: destination.occupancyVersion,
+    },
+  };
   next.pendingTransfers = next.pendingTransfers.filter(
     (item) => item.id !== transferId,
   );
@@ -1915,6 +2024,9 @@ export function projectRound(
       expiresAt: reveal.expiresAt,
       reason: reveal.reason ?? "wrong-card",
     })),
+    ...(state.lastAction
+      ? { lastAction: structuredClone(state.lastAction) }
+      : {}),
     restartCount: state.restartCount,
     ...(state.lastRestartReason
       ? { lastRestartReason: state.lastRestartReason }

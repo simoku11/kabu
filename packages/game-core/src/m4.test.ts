@@ -147,7 +147,7 @@ function selected(
 }
 
 describe("M4 abilities", () => {
-  it("grants one fresh ten-second window when an activity is started", () => {
+  it("grants one fresh twenty-second window when an activity is started", () => {
     const state = direct(started(), cardId("hearts", "5"), 1_000);
     const effect = state.effects[0]!;
 
@@ -160,7 +160,7 @@ describe("M4 abilities", () => {
     if (!activated.ok) throw new Error(activated.message);
     expect(activated.state.effects[0]).toMatchObject({
       activated: true,
-      expiresAt: 15_000,
+      expiresAt: 25_000,
     });
     expect(
       activateEffect(activated.state, effect.ownerPlayerId, effect.id, 6_000),
@@ -171,7 +171,7 @@ describe("M4 abilities", () => {
     const state = direct(started(), cardId("hearts", "5"), 1_000);
     const effect = state.effects[0]!;
     expect(
-      activateEffect(state, effect.ownerPlayerId, effect.id, 11_000),
+      activateEffect(state, effect.ownerPlayerId, effect.id, 21_000),
     ).toMatchObject({ ok: false, code: "INVALID_EFFECT" });
   });
 
@@ -304,7 +304,7 @@ describe("M4 abilities", () => {
     },
   );
 
-  it("limits private views to ten seconds and closes them server-side", () => {
+  it("limits private views to twenty seconds and closes them server-side", () => {
     let state = direct(started(), cardId("hearts", "5"), 1_000);
     const effect = state.effects[0]!;
     const target = positionTarget(state, effect.ownerPlayerId);
@@ -317,19 +317,19 @@ describe("M4 abilities", () => {
     );
     if (!selected.ok) throw new Error(selected.message);
     state = selected.state;
-    expect(state.effects[0]!.expiresAt).toBe(11_000);
+    expect(state.effects[0]!.expiresAt).toBe(21_000);
     expect(
-      projectRound(state, effect.ownerPlayerId, 10_999).you.privateEffect,
+      projectRound(state, effect.ownerPlayerId, 20_999).you.privateEffect,
     ).toBeDefined();
     expect(
-      projectRound(state, effect.ownerPlayerId, 11_000).you.privateEffect,
+      projectRound(state, effect.ownerPlayerId, 21_000).you.privateEffect,
     ).toBeUndefined();
-    expect(expireEffect(state, effect.id, 10_999)).toMatchObject({ ok: false });
-    const expired = expireEffect(state, effect.id, 11_000);
+    expect(expireEffect(state, effect.id, 20_999)).toMatchObject({ ok: false });
+    const expired = expireEffect(state, effect.id, 21_000);
     expect(expired.ok && expired.state.effects).toEqual([]);
   });
 
-  it("keeps black-king cards in place when its ten-second decision expires", () => {
+  it("keeps black-king cards in place when its twenty-second decision expires", () => {
     let state = direct(started(), cardId("clubs", "king"), 1_000);
     const effect = state.effects[0]!;
     const first = positionTarget(state, "p0");
@@ -355,8 +355,8 @@ describe("M4 abilities", () => {
     );
     if (!secondSelection.ok) throw new Error(secondSelection.message);
     state = secondSelection.state;
-    expect(state.effects[0]!.expiresAt).toBe(11_000);
-    const expired = expireEffect(state, effect.id, 11_000);
+    expect(state.effects[0]!.expiresAt).toBe(21_000);
+    const expired = expireEffect(state, effect.id, 21_000);
     if (!expired.ok) throw new Error(expired.message);
     expect(expired.state.players[0]!.positions[0]!.cardId).toBe(before[0]);
     expect(expired.state.players[1]!.positions[0]!.cardId).toBe(before[1]);
@@ -397,7 +397,7 @@ describe("M4 reactions and conflicts", () => {
 
     expect(state.reactionWindow?.status).toBe("consumed");
     expect(state.effects).toMatchObject([
-      { id: effect.id, phase: "selecting", expiresAt: 11_000 },
+      { id: effect.id, phase: "selecting", expiresAt: 21_000 },
     ]);
     expect(state.pendingTransfers).toHaveLength(1);
   });
@@ -620,6 +620,14 @@ describe("M4 reactions and conflicts", () => {
     );
     if (!result.ok) throw new Error(result.message);
     state = result.state;
+    expect(projectRound(state, "p0").lastAction).toMatchObject({
+      kind: "reaction",
+      actorPlayerId: "p2",
+      source: foreign,
+    });
+    expect(JSON.stringify(projectRound(state, "p0").lastAction)).not.toContain(
+      "queen",
+    );
     expect(state.pendingTransfers).toHaveLength(1);
     expect(drawCard(state, "p2", state.turn.id, random)).toMatchObject({
       ok: false,
@@ -632,6 +640,11 @@ describe("M4 reactions and conflicts", () => {
       own,
     );
     if (!transfer.ok) throw new Error(transfer.message);
+    expect(projectRound(transfer.state, "p0").lastAction).toMatchObject({
+      kind: "transfer",
+      actorPlayerId: "p2",
+      target: { playerId: "p1", positionId: foreign.positionId },
+    });
     const destination = transfer.state.players[1]!.positions.find(
       (position) => position.id === foreign.positionId,
     )!;

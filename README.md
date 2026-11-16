@@ -22,6 +22,28 @@ Danach ist die Browser-App unter `http://localhost:5173` erreichbar. Vite
 leitet HTTP und Socket.IO an den autoritativen Server weiter. Dort können
 private Räume erstellt und mit 2–6 Browsern per Link oder Code betreten werden.
 
+## Zwei lokale Spieler mit einem Befehl
+
+Für einen schnellen Test mit zwei getrennten Spielersitzungen genügt:
+
+```bash
+pnpm dev:two
+```
+
+Der Befehl startet PostgreSQL, führt die Migrationen aus, startet Server und
+Web-App, erstellt eine gemeinsame Lobby und öffnet zwei Chrome-/Chromium-Fenster
+mit temporären, voneinander getrennten Browserprofilen. Mit `Ctrl+C` werden die
+Entwicklungsserver und Browser beendet und die temporären Profile gelöscht. Der
+PostgreSQL-Container bleibt für den nächsten Test verfügbar. Die Namen und
+Rundenzahl lassen sich optional anpassen:
+
+```bash
+pnpm dev:two -- --host Ada --guest Bo --rounds 5
+```
+
+Falls Chrome nicht automatisch gefunden wird, kann der Browser mit
+`KABU_BROWSER=/pfad/zu/chrome` oder `--browser /pfad/zu/chrome` angegeben werden.
+
 ## Prüfen
 
 ```bash
@@ -71,6 +93,10 @@ reine Bedienprüfung bleibt in `docs/m6-abnahme.md`.
 Die private Beta wird mit `pnpm load:m8` technisch belastet. Messgrenzen,
 PostgreSQL-Variante, Fehlerbericht und die nummerierte Geräteabnahme stehen in
 `docs/m8-beta.md` und `docs/m8-abnahme.md`.
+
+Die aktuelle Railway-Topologie, Servicekonfiguration, Variablen und der
+manuelle Ablauf für den bekannten Singleton-Deploymentkonflikt stehen in
+`docs/railway-deployment.md`.
 
 M6 ergänzt die mobile Bedienung der vollständigen Partie. Echte Handytests bleiben
 Teil der manuellen Abnahme und wurden durch die automatisierte Suite nicht

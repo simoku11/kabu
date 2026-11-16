@@ -238,6 +238,11 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Ausgeschieden: "Eliminated",
     "Gezogene Karte": "Drawn card",
     Gezogen: "Drawn",
+    "{name} hält die gezogene Karte": "{name} is holding the drawn card",
+    "{name} sieht hier eine Karte an": "{name} is viewing a card here",
+    "Falsche Karte aufgedeckt · Strafkarte":
+      "Wrong card revealed · Penalty card",
+    "Zu späte Reaktion · Strafkarte": "Late reaction · Penalty card",
     Spieltisch: "Game table",
     "Mitspieler in Zugreihenfolge": "Other players in turn order",
     Tischmitte: "Center of table",
@@ -267,6 +272,26 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Gehalten: "Held",
     "Zu spät · Strafkarte": "Too late · Penalty card",
     "Falsche Karte · Strafkarte": "Wrong card · Penalty card",
+    "{name} zieht eine Karte.": "{name} draws a card.",
+    "{name} legt die gezogene Karte ab.": "{name} discards the drawn card.",
+    "{name} tauscht die gezogene Karte.": "{name} swaps the drawn card.",
+    "{name} hält eine Karte zum Ansehen.": "{name} holds a card to view it.",
+    "{name} legt die angesehenen Karten zurück.":
+      "{name} puts the viewed cards back.",
+    "{name} tauscht zwei Karten.": "{name} swaps two cards.",
+    "{name} reagiert mit einer eigenen Karte.":
+      "{name} reacts with their own card.",
+    "{name} reagiert auf {owner}s Karte.": "{name} reacts to {owner}'s card.",
+    "{name} gibt {recipient} die Ausgleichskarte.":
+      "{name} gives {recipient} the replacement card.",
+    "{name} erhält eine verdeckte Strafkarte.":
+      "{name} receives a face-down penalty card.",
+    "{name} deckt eine falsche Karte auf und erhält eine Strafkarte.":
+      "{name} reveals a wrong card and receives a penalty card.",
+    "{name} reagiert zu spät und erhält eine Strafkarte.":
+      "{name} reacts too late and receives a penalty card.",
+    "{name} gibt {recipient} eine verdeckte Zusatzkarte.":
+      "{name} gives {recipient} an extra face-down card.",
     "{value} Punkte": "{value} points",
     "{seconds} Sekunden verbleibend": "{seconds} seconds remaining",
     "Runde {round} · Zwei nahe Karten ansehen und merken.":
@@ -505,6 +530,11 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Ausgeschieden: "Выбыл",
     "Gezogene Karte": "Взятая карта",
     Gezogen: "Взято",
+    "{name} hält die gezogene Karte": "{name} держит взятую карту",
+    "{name} sieht hier eine Karte an": "{name} просматривает здесь карту",
+    "Falsche Karte aufgedeckt · Strafkarte":
+      "Открыта неверная карта · Штрафная карта",
+    "Zu späte Reaktion · Strafkarte": "Поздняя реакция · Штрафная карта",
     Spieltisch: "Игровой стол",
     "Mitspieler in Zugreihenfolge": "Соперники в порядке ходов",
     Tischmitte: "Центр стола",
@@ -535,6 +565,28 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Gehalten: "Удерживается",
     "Zu spät · Strafkarte": "Слишком поздно · Штрафная карта",
     "Falsche Karte · Strafkarte": "Неверная карта · Штрафная карта",
+    "{name} zieht eine Karte.": "{name} берёт карту.",
+    "{name} legt die gezogene Karte ab.": "{name} сбрасывает взятую карту.",
+    "{name} tauscht die gezogene Karte.": "{name} меняет взятую карту.",
+    "{name} hält eine Karte zum Ansehen.":
+      "{name} удерживает карту для просмотра.",
+    "{name} legt die angesehenen Karten zurück.":
+      "{name} возвращает просмотренные карты.",
+    "{name} tauscht zwei Karten.": "{name} меняет две карты местами.",
+    "{name} reagiert mit einer eigenen Karte.":
+      "{name} реагирует своей картой.",
+    "{name} reagiert auf {owner}s Karte.":
+      "{name} реагирует на карту игрока {owner}.",
+    "{name} gibt {recipient} die Ausgleichskarte.":
+      "{name} передаёт игроку {recipient} карту замены.",
+    "{name} erhält eine verdeckte Strafkarte.":
+      "{name} получает закрытую штрафную карту.",
+    "{name} deckt eine falsche Karte auf und erhält eine Strafkarte.":
+      "{name} открывает неверную карту и получает штрафную карту.",
+    "{name} reagiert zu spät und erhält eine Strafkarte.":
+      "{name} реагирует слишком поздно и получает штрафную карту.",
+    "{name} gibt {recipient} eine verdeckte Zusatzkarte.":
+      "{name} даёт игроку {recipient} дополнительную закрытую карту.",
     "{value} Punkte": "{value} очков",
     "{seconds} Sekunden verbleibend": "Осталось секунд: {seconds}",
     "Runde {round} · Zwei nahe Karten ansehen und merken.":

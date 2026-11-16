@@ -101,7 +101,7 @@ describe("M5 round and match flow", () => {
     expect(callKabu(called.state, "p2", called.state.turn.id).ok).toBe(false);
   });
 
-  it("consumes a skipped final turn and opens exactly 3000 ms after the last discard", () => {
+  it("consumes a skipped final turn and opens exactly 6000 ms after the last discard", () => {
     let state = playing(3);
     const called = callKabu(state, "p1", state.turn.id);
     if (!called.ok) throw new Error(called.message);

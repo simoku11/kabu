@@ -1,8 +1,10 @@
 import {
   type CSSProperties,
   type FormEvent,
+  type RefObject,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -36,6 +38,15 @@ type Screen =
   | { kind: "home"; invitedCode?: string }
   | { kind: "lobby"; snapshot: LobbySnapshot }
   | { kind: "fatal"; message: string };
+
+const EFFECT_DURATION_MS = 20_000;
+const CARD_MOVE_DURATION_MS = 300;
+const CARD_HIGHLIGHT_DURATION_MS = 360;
+const CARD_MOVE_STAGGER_MS = 65;
+const CARD_SWAP_DURATION_MS = 680;
+const CARD_SWAP_HIGHLIGHT_MS = 820;
+const ABILITY_SWAP_PREVIEW_MS = 520;
+const ABILITY_SWAP_DURATION_MS = 1_050;
 
 function codeFromLocation(): string | undefined {
   const match = /^\/room\/([A-HJ-NP-Z2-9]{6})\/?$/iu.exec(
@@ -1832,7 +1843,8 @@ export function EffectTimerFrame({
     return () => window.clearInterval(timer);
   }, [expiresAt]);
   const milliseconds = Math.max(0, (expiresAt ?? now) - now);
-  const progress = expiresAt === undefined ? 1 : milliseconds / 10_000;
+  const progress =
+    expiresAt === undefined ? 1 : milliseconds / EFFECT_DURATION_MS;
   return (
     <div
       className="effect-timer-frame"
@@ -1845,6 +1857,258 @@ export function EffectTimerFrame({
       {children}
     </div>
   );
+}
+
+type TableAction = NonNullable<RoundView["lastAction"]>;
+
+function actionPlayerName(snapshot: LobbySnapshot, playerId: string) {
+  return (
+    snapshot.participants.find(
+      (participant) => participant.playerId === playerId,
+    )?.name ?? "Spieler"
+  );
+}
+
+export function tableActionAnnouncement(
+  action: TableAction | undefined,
+  snapshot: LobbySnapshot,
+  t: Translate = (text) => text,
+  revealReason?: "wrong-card" | "too-late",
+) {
+  if (!action) return undefined;
+  const actor = actionPlayerName(snapshot, action.actorPlayerId);
+  if (action.kind === "draw")
+    return t("{name} zieht eine Karte.", { name: actor });
+  if (action.kind === "discard-drawn")
+    return t("{name} legt die gezogene Karte ab.", { name: actor });
+  if (action.kind === "swap-drawn")
+    return t("{name} tauscht die gezogene Karte.", { name: actor });
+  if (action.kind === "inspect")
+    return t("{name} hält eine Karte zum Ansehen.", { name: actor });
+  if (action.kind === "keep")
+    return t("{name} legt die angesehenen Karten zurück.", { name: actor });
+  if (action.kind === "ability-swap")
+    return t("{name} tauscht zwei Karten.", { name: actor });
+  if (action.kind === "reaction") {
+    const owner = actionPlayerName(snapshot, action.source.playerId);
+    return action.source.playerId === action.actorPlayerId
+      ? t("{name} reagiert mit einer eigenen Karte.", { name: actor })
+      : t("{name} reagiert auf {owner}s Karte.", { name: actor, owner });
+  }
+  if (action.kind === "transfer") {
+    const recipient = actionPlayerName(snapshot, action.target.playerId);
+    return t("{name} gibt {recipient} die Ausgleichskarte.", {
+      name: actor,
+      recipient,
+    });
+  }
+  if (action.kind === "penalty" && revealReason === "wrong-card")
+    return t(
+      "{name} deckt eine falsche Karte auf und erhält eine Strafkarte.",
+      {
+        name: actor,
+      },
+    );
+  if (action.kind === "penalty" && revealReason === "too-late")
+    return t("{name} reagiert zu spät und erhält eine Strafkarte.", {
+      name: actor,
+    });
+  if (action.kind === "penalty")
+    return t("{name} erhält eine verdeckte Strafkarte.", { name: actor });
+  if (action.kind === "add-card")
+    return t("{name} gibt {recipient} eine verdeckte Zusatzkarte.", {
+      name: actor,
+      recipient: actionPlayerName(snapshot, action.targetPlayerId),
+    });
+  return undefined;
+}
+
+function useTableMotion(
+  game: RoundView,
+  online: boolean,
+  tableRef: RefObject<HTMLElement | null>,
+) {
+  const previousRects = useRef(new Map<string, DOMRect>());
+  const previousActionId = useRef<string | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const root = tableRef.current;
+    if (!root) return;
+    const current = new Map<string, DOMRect>();
+    root.querySelectorAll<HTMLElement>("[data-motion-id]").forEach((node) => {
+      const id = node.dataset.motionId;
+      if (id) current.set(id, node.getBoundingClientRect());
+    });
+    const action = game.lastAction;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const old = previousRects.current;
+    const shouldAnimate =
+      online &&
+      action &&
+      action.id !== previousActionId.current &&
+      old.size > 0;
+    const visible = (rect: DOMRect) =>
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < innerHeight &&
+      rect.left < innerWidth;
+    const highlight = (id: string, duration = CARD_HIGHLIGHT_DURATION_MS) => {
+      const node = root.querySelector<HTMLElement>(
+        `[data-motion-id="${CSS.escape(id)}"]`,
+      );
+      node?.animate?.(
+        [
+          { outline: "3px solid rgba(240, 198, 93, .85)" },
+          { outline: "3px solid rgba(240, 198, 93, 0)" },
+        ],
+        {
+          duration: reduced ? 90 : duration,
+          easing: "ease-out",
+        },
+      );
+    };
+    const move = (
+      fromId: string,
+      toId: string,
+      options: { delay?: number; duration?: number; arc?: number } = {},
+    ) => {
+      const from = old.get(fromId) ?? current.get(fromId);
+      const to = current.get(toId) ?? old.get(toId);
+      if (!from || !to || reduced || !visible(from) || !visible(to)) {
+        highlight(toId);
+        return;
+      }
+      const copy = document.createElement("div");
+      copy.className = "card-motion-copy";
+      copy.setAttribute("aria-hidden", "true");
+      Object.assign(copy.style, {
+        left: `${from.left}px`,
+        top: `${from.top}px`,
+        width: `${Math.min(from.width, to.width)}px`,
+        height: `${Math.min(from.height, to.height)}px`,
+      });
+      document.body.append(copy);
+      const animation = copy.animate(
+        [
+          { transform: "translate3d(0, 0, 0)", opacity: 0.94 },
+          ...(options.arc
+            ? [
+                {
+                  transform: `translate3d(${(to.left - from.left) / 2}px, ${(to.top - from.top) / 2 + options.arc}px, 0) scale(1.06)`,
+                  opacity: 1,
+                },
+              ]
+            : []),
+          {
+            transform: `translate3d(${to.left - from.left}px, ${to.top - from.top}px, 0)`,
+            opacity: 1,
+          },
+        ],
+        {
+          duration: options.duration ?? CARD_MOVE_DURATION_MS,
+          delay: options.delay ?? 0,
+          easing: "cubic-bezier(.2,.75,.25,1)",
+          fill: "forwards",
+        },
+      );
+      animation.finished
+        .finally(() => copy.remove())
+        .catch(() => copy.remove());
+    };
+
+    if (shouldAnimate) {
+      const actor = action.actorPlayerId;
+      const newestPosition = (playerId: string) =>
+        [...current.keys()].find((id) => {
+          if (!id.startsWith("position:") || old.has(id)) return false;
+          return Boolean(
+            root
+              .querySelector(`[data-motion-id="${CSS.escape(id)}"]`)
+              ?.closest(`[data-player-id="${CSS.escape(playerId)}"]`),
+          );
+        });
+      if (action.kind === "draw")
+        move(
+          "draw-pile",
+          current.has(`drawn:${actor}`) ? `drawn:${actor}` : `player:${actor}`,
+        );
+      else if (action.kind === "discard-drawn")
+        move(
+          old.has(`drawn:${actor}`) ? `drawn:${actor}` : `player:${actor}`,
+          "discard",
+        );
+      else if (action.kind === "swap-drawn") {
+        highlight(
+          `position:${action.source.positionId}`,
+          CARD_SWAP_HIGHLIGHT_MS,
+        );
+        move(`position:${action.source.positionId}`, "discard", {
+          duration: CARD_SWAP_DURATION_MS,
+        });
+        move(
+          old.has(`drawn:${actor}`) ? `drawn:${actor}` : `player:${actor}`,
+          `position:${action.source.positionId}`,
+          {
+            delay: CARD_MOVE_STAGGER_MS * 2,
+            duration: CARD_SWAP_DURATION_MS,
+          },
+        );
+      } else if (action.kind === "ability-swap") {
+        highlight(
+          `position:${action.source.positionId}`,
+          ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS,
+        );
+        highlight(
+          `position:${action.target.positionId}`,
+          ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS,
+        );
+        move(
+          `position:${action.source.positionId}`,
+          `position:${action.target.positionId}`,
+          {
+            delay: ABILITY_SWAP_PREVIEW_MS,
+            duration: ABILITY_SWAP_DURATION_MS,
+            arc: -22,
+          },
+        );
+        move(
+          `position:${action.target.positionId}`,
+          `position:${action.source.positionId}`,
+          {
+            delay: ABILITY_SWAP_PREVIEW_MS + CARD_MOVE_STAGGER_MS,
+            duration: ABILITY_SWAP_DURATION_MS,
+            arc: 22,
+          },
+        );
+      } else if (action.kind === "reaction")
+        move(`position:${action.source.positionId}`, "discard");
+      else if (action.kind === "transfer")
+        move(
+          `position:${action.source.positionId}`,
+          `position:${action.target.positionId}`,
+        );
+      else if (action.kind === "penalty") {
+        highlight(`position:${action.source.positionId}`);
+        move("draw-pile", newestPosition(actor) ?? `player:${actor}`);
+      } else if (action.kind === "add-card")
+        move(
+          "draw-pile",
+          newestPosition(action.targetPlayerId) ??
+            `player:${action.targetPlayerId}`,
+        );
+      else if (action.kind === "inspect")
+        highlight(`position:${action.source.positionId}`);
+      else if (action.kind === "keep")
+        action.targets.forEach((target) =>
+          highlight(`position:${target.positionId}`),
+        );
+    }
+
+    previousRects.current = current;
+    previousActionId.current = action?.id;
+  }, [game, online, tableRef]);
 }
 
 export function GameTable({
@@ -1888,6 +2152,8 @@ export function GameTable({
   ) => void;
 }) {
   const { t } = useI18n();
+  const tableRef = useRef<HTMLElement>(null);
+  useTableMotion(game, online, tableRef);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === "undefined" ? 390 : window.innerWidth,
   );
@@ -1962,6 +2228,7 @@ export function GameTable({
         className={`table-player${own ? " own" : ""}${activePlayer ? " active" : ""}${player.eliminated ? " eliminated" : ""}${fieldColumns > 2 ? " expanded" : ""}`}
         data-player-id={player.playerId}
         data-seat={player.seat}
+        data-motion-id={`player:${player.playerId}`}
         key={player.playerId}
         aria-label={`${t("Kartenfeld von {name}", { name: participant?.name ?? t("Spieler") })}${activePlayer ? `, ${t("aktiver Spieler")}` : ""}`}
       >
@@ -2030,17 +2297,20 @@ export function GameTable({
                 />
               </div>
             )}
-            {own && (
+            {activePlayer && game.turn.phase === "awaiting-decision" && (
               <div
-                className={`drawn-card-slot${drawnCard ? " occupied" : ""}`}
-                aria-label={drawnCard ? t("Gezogene Karte") : undefined}
-                aria-hidden={drawnCard ? undefined : true}
+                className={`drawn-card-slot occupied${own ? " private" : " public"}`}
+                data-motion-id={`drawn:${player.playerId}`}
+                aria-label={t("{name} hält die gezogene Karte", {
+                  name: participant?.name ?? t("Spieler"),
+                })}
               >
-                {drawnCard && (
-                  <>
-                    <span className="drawn-card-label">{t("Gezogen")}</span>
-                    <CardFace card={drawnCard} />
-                  </>
+                {own && drawnCard ? (
+                  <CardFace card={drawnCard} />
+                ) : (
+                  <span className="card-back" aria-hidden="true">
+                    ♦
+                  </span>
                 )}
               </div>
             )}
@@ -2062,6 +2332,7 @@ export function GameTable({
 
   return (
     <section
+      ref={tableRef}
       className={`game-table players-${game.players.length}`}
       aria-label={t("Spieltisch")}
       style={tableStyle}
@@ -2075,6 +2346,20 @@ export function GameTable({
       <div className="table-center" aria-label={t("Tischmitte")}>
         <div className={`table-piles${centerAction ? " has-action" : ""}`}>
           <div className="pile-hint-slot">
+            {game.lastAction && (
+              <p
+                className="table-action-announcement"
+                role="status"
+                aria-live="polite"
+              >
+                {tableActionAnnouncement(
+                  game.lastAction,
+                  snapshot,
+                  t,
+                  game.publicReveals?.at(-1)?.reason,
+                )}
+              </p>
+            )}
             {hint && (
               <p className="pile-hint" role="status">
                 {hint}
@@ -2092,6 +2377,7 @@ export function GameTable({
                 (game.effects?.length ?? 0) > 0 ||
                 game.turn.phase !== "awaiting-draw"
               }
+              data-motion-id="draw-pile"
               onClick={onDraw}
               aria-label={
                 isActive && game.turn.phase === "awaiting-draw"
@@ -2115,6 +2401,7 @@ export function GameTable({
           <button
             type="button"
             className={`discard-pile${game.discardTop ? "" : " empty"}${drawnCard ? " accepts-drawn" : ""}`}
+            data-motion-id="discard"
             aria-label={
               drawnCard
                 ? t("Gezogene Karte auf den Ablagestapel legen")
@@ -2131,11 +2418,9 @@ export function GameTable({
               <span className="empty-discard">{t("Leer")}</span>
             )}
           </button>
-          {centerAction && (
-            <div className="pile-action-slot" aria-live="polite">
-              {centerAction}
-            </div>
-          )}
+          <div className="pile-action-slot" aria-live="polite">
+            {centerAction}
+          </div>
         </div>
         <div className="reaction-status" role="status">
           {!game.reactionWindow
@@ -2223,7 +2508,7 @@ function PlayerField({
             return (
               <button
                 type="button"
-                className={`field-position ${position.card || privateCard ? "revealed" : ""}${privateCard ? " private-reveal" : ""}${markSelectable && selectable(position) ? " swap-option" : ""}`}
+                className={`field-position ${position.card || privateCard ? "revealed" : ""}${privateCard ? " private-reveal" : ""}${position.held ? " held" : ""}${markSelectable && selectable(position) ? " swap-option" : ""}`}
                 disabled={!privateCard && !selectable(position)}
                 onClick={() => {
                   if (privateCard && onClosePrivateView) {
@@ -2240,22 +2525,8 @@ function PlayerField({
                   gridColumn: visualColumn.get(position.column),
                   gridRow: visualRow.get(row),
                 }}
+                data-motion-id={`position:${position.id}`}
               >
-                {position.held && (
-                  <span
-                    className="position-marker"
-                    aria-label={t("Karte gehalten")}
-                  >
-                    {t("Gehalten")}
-                  </span>
-                )}
-                {reveal && (
-                  <span className="position-marker reveal-marker">
-                    {reveal.reason === "too-late"
-                      ? t("Zu spät · Strafkarte")
-                      : t("Falsche Karte · Strafkarte")}
-                  </span>
-                )}
                 {privateCard ? (
                   <TimedCardFace
                     card={privateCard.card}
@@ -2303,7 +2574,10 @@ function TimedCardFace({
     const timer = window.setInterval(() => setNow(Date.now()), 100);
     return () => window.clearInterval(timer);
   }, [expiresAt]);
-  const progress = Math.max(0, Math.min(1, (expiresAt - now) / 10_000));
+  const progress = Math.max(
+    0,
+    Math.min(1, (expiresAt - now) / EFFECT_DURATION_MS),
+  );
   return (
     <span
       className="timed-reveal"

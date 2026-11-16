@@ -16,6 +16,7 @@ import {
   initialViewTableHint,
   selectionPurpose,
   stableFieldAnchorOffset,
+  tableActionAnnouncement,
   visualColumnOrder,
 } from "./App";
 
@@ -89,6 +90,31 @@ function renderTable(round: RoundView, viewerSeat = 0) {
 }
 
 describe("shared game table", () => {
+  it("describes a foreign reaction with actor and field owner but no card value", () => {
+    const round = game(2);
+    round.lastAction = {
+      id: "reaction-1:reaction:position:1",
+      kind: "reaction",
+      actorPlayerId: playerId(0),
+      source: {
+        playerId: playerId(1),
+        positionId: round.players[1]!.positions[0]!.id,
+        occupancyVersion: 1,
+      },
+    };
+    const message = tableActionAnnouncement(
+      round.lastAction,
+      snapshot(round),
+      (text, values) =>
+        Object.entries(values ?? {}).reduce(
+          (result, [key, value]) => result.replace(`{${key}}`, String(value)),
+          text,
+        ),
+    );
+    expect(message).toBe("P0 reagiert auf P1s Karte.");
+    expect(message).not.toMatch(/Herz|Karo|Pik|Kreuz|König|Dame/u);
+  });
+
   for (const count of [2, 3, 6]) {
     it(`renders all fields and the common center for ${count} players`, () => {
       const markup = renderTable(game(count));
@@ -190,7 +216,8 @@ describe("shared game table", () => {
     };
 
     const markup = renderTable(round);
-    expect(markup).toContain("Gehalten");
+    expect(markup).not.toContain("position-marker");
+    expect(markup).not.toContain("field-status-note");
     expect(markup).not.toContain("frei");
     expect(markup).not.toContain(opponent.positions[0]!.id);
     expect(markup).toContain(`${opponent.playerId}:near:2`);
@@ -476,6 +503,11 @@ describe("shared game table", () => {
     round.you.drawnCard = { suit: "hearts", rank: "7", value: 7 };
     round.turn.phase = "awaiting-decision";
     round.activePlayerId = playerId(0);
+    round.lastAction = {
+      id: "turn-1",
+      kind: "draw",
+      actorPlayerId: playerId(0),
+    };
     const markup = renderToStaticMarkup(
       <GameTable
         snapshot={snapshot(round)}
@@ -487,18 +519,41 @@ describe("shared game table", () => {
         onDiscardDrawn={() => undefined}
       />,
     );
-    expect(markupWithoutDrawnCard).toContain('class="drawn-card-slot"');
-    expect(markup).toContain('class="drawn-card-slot occupied"');
+    expect(markupWithoutDrawnCard).not.toContain("drawn-card-slot");
+    expect(markup).toContain('class="drawn-card-slot occupied private"');
     expect(markup).toContain('class="own-card-field"');
-    expect(markup).toContain('class="drawn-card-label">Gezogen');
+    expect(markup).toContain("P0 hält die gezogene Karte");
+    expect(markup).not.toContain("drawn-card-label");
     expect(markup.indexOf('class="own-card-field"')).toBeLessThan(
-      markup.indexOf('class="drawn-card-slot occupied"'),
+      markup.indexOf('class="drawn-card-slot occupied private"'),
     );
     expect(markupWithoutDrawnCard.match(/--card-width:\d+px/u)?.[0]).toBe(
       markup.match(/--card-width:\d+px/u)?.[0],
     );
     expect(markup).toContain("Gezogene Karte auf den Ablagestapel legen");
     expect(markup).not.toContain("Gezogene Karte direkt ablegen");
+  });
+
+  it("shows an opponent holding a drawn card beside their field without revealing it", () => {
+    const round = game(2);
+    round.turn.phase = "awaiting-decision";
+    round.activePlayerId = playerId(1);
+    round.lastAction = {
+      id: "turn-1",
+      kind: "draw",
+      actorPlayerId: playerId(1),
+    };
+
+    const markup = renderTable(round);
+    const opponent = markup.slice(
+      markup.indexOf(`data-player-id="${playerId(1)}"`),
+      markup.indexOf('class="table-center"'),
+    );
+    expect(opponent).toContain('class="drawn-card-slot occupied public"');
+    expect(opponent).toContain("P1 hält die gezogene Karte");
+    expect(opponent).not.toContain("drawn-card-label");
+    expect(opponent).toContain('class="card-back"');
+    expect(opponent).not.toContain('class="card-face');
   });
 
   it("reveals a private effect card at its stable table position with a ring timer", () => {
@@ -549,10 +604,20 @@ describe("shared game table", () => {
       reason: "wrong-card",
     };
     round.publicReveals = [reveal];
+    round.lastAction = {
+      id: "reaction-1:penalty",
+      kind: "penalty",
+      actorPlayerId: playerId(0),
+      source: reveal.target,
+    };
     target.card = reveal.card;
     const markup = renderTable(round);
     expect(markup).toContain("falsche Karte – Strafkarte erhalten");
-    expect(markup).toContain("Falsche Karte · Strafkarte");
+    expect(markup).toContain(
+      "P0 deckt eine falsche Karte auf und erhält eine Strafkarte.",
+    );
+    expect(markup).not.toContain("reveal-marker");
+    expect(markup).not.toContain("field-status-note");
     expect(renderTable(game(2))).not.toMatch(
       /aria-label="[^"]*(clubs|5 Punkte)/u,
     );

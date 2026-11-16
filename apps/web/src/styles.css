@@ -705,33 +705,18 @@ form button {
   color: #d8e0dc;
   background: rgba(255, 255, 255, 0.055);
   touch-action: manipulation;
+  transition:
+    transform 260ms ease-out,
+    filter 260ms ease-out,
+    box-shadow 260ms ease-out;
 }
-.position-marker {
-  position: absolute;
-  z-index: 1;
-  top: 0.12rem;
-  right: 0.12rem;
-  max-width: calc(100% - 0.24rem);
-  overflow: hidden;
-  padding: 0.15rem 0.25rem;
-  border-radius: 999px;
-  color: #171d19;
-  background: #d5b65e;
-  font-size: 0.5rem;
-  line-height: 1;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.reveal-marker {
-  top: auto;
-  right: 0.15rem;
-  bottom: 0.15rem;
-  left: 0.15rem;
-  max-width: none;
-  color: #fff;
-  background: #8f302f;
-  white-space: normal;
+.field-position.held,
+.field-position.private-reveal {
+  z-index: 2;
+  outline: 2px solid rgba(240, 198, 93, 0.78);
+  outline-offset: 0.16rem;
+  filter: drop-shadow(0 0.7rem 0.48rem rgba(0, 0, 0, 0.5));
+  transform: translateY(-0.52rem) scale(1.055);
 }
 .field-position:disabled {
   opacity: 1;
@@ -756,7 +741,7 @@ form button {
     #8f302f;
   font-size: 1.5rem;
   transform-origin: center;
-  animation: card-turn-closed 180ms ease-out;
+  animation: card-turn-closed 280ms ease-out;
 }
 .card-face {
   display: grid;
@@ -786,12 +771,12 @@ form button {
 }
 .table-piles {
   display: grid;
-  grid-template-columns: minmax(3.4rem, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr);
   gap: 0.3rem;
   margin: 1rem 0 1.25rem;
 }
 .table-piles.has-action {
-  grid-template-columns: minmax(2.8rem, 1fr) auto auto minmax(5rem, auto);
+  grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr);
 }
 .pile-action-slot {
   display: grid;
@@ -981,33 +966,27 @@ form button {
 }
 .drawn-card-slot {
   position: absolute;
-  left: calc(100% + 0.75rem);
+  left: calc(100% + clamp(0.15rem, 0.8vw, 0.45rem));
   bottom: 0.38rem;
   width: var(--card-width);
   height: var(--card-height);
   border-radius: 0.58rem;
   visibility: hidden;
 }
+.table-player.own .drawn-card-slot {
+  left: calc(100% + 0.75rem);
+}
 .drawn-card-slot.occupied {
   visibility: visible;
   background: rgba(76, 204, 131, 0.12);
-  outline: 2px solid #76d6a1;
+  outline: 3px solid #76d6a1;
   outline-offset: 0.18rem;
+  box-shadow: 0 0.55rem 1rem rgba(0, 0, 0, 0.4);
+  animation: held-card-arrive 320ms ease-out;
 }
-.drawn-card-label {
-  position: absolute;
-  z-index: 2;
-  right: 0.18rem;
-  bottom: 0.18rem;
-  padding: 0.14rem 0.24rem;
-  border-radius: 999px;
-  color: #10231c;
-  background: #76d6a1;
-  font-size: 0.46rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-transform: uppercase;
+.drawn-card-slot.public {
+  outline-color: #d5b65e;
+  background: rgba(213, 182, 94, 0.14);
 }
 .timed-reveal {
   position: relative;
@@ -1015,7 +994,7 @@ form button {
   width: var(--card-width);
   height: var(--card-height);
   transform-origin: center;
-  animation: card-turn-open 240ms ease-out;
+  animation: card-turn-open 320ms ease-out;
 }
 .timed-reveal::after {
   position: absolute;
@@ -1054,6 +1033,17 @@ form button {
   }
   to {
     transform: rotateY(0);
+  }
+}
+
+@keyframes held-card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1113,11 +1103,41 @@ form button {
   text-align: center;
 }
 .game-table {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto;
   gap: 0.55rem;
   margin: 0.35rem 0 1rem;
+}
+.table-action-announcement {
+  max-width: 100%;
+  margin: 0 0 0.28rem;
+  padding: 0.28rem 0.42rem;
+  border: 1px solid rgba(240, 198, 93, 0.32);
+  border-radius: 999px;
+  color: #f5e8bd;
+  background: rgba(13, 33, 26, 0.94);
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
+}
+.card-motion-copy {
+  position: fixed;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.45rem;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.08) 0 4px,
+      transparent 4px 8px
+    ),
+    #8f302f;
+  box-shadow: 0 0.55rem 1rem rgba(0, 0, 0, 0.36);
+  pointer-events: none;
+  will-change: transform;
 }
 .opponent-fields {
   display: grid;
@@ -1148,6 +1168,7 @@ form button {
   box-shadow: none;
 }
 .table-player.own {
+  display: grid;
   width: fit-content;
   max-width: min(100%, 34rem);
   margin: 0 auto;
@@ -1160,21 +1181,34 @@ form button {
   box-shadow: none;
 }
 .table-player > header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  justify-content: center;
+  place-items: center;
   gap: 0.4rem;
-  padding-left: 0.45rem;
+  width: 100%;
+  padding-inline: 0;
   color: #dbe4df;
   font-size: 0.75rem;
 }
 .table-player.own > header {
-  margin-bottom: 0.75rem;
+  grid-row: 2;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+.table-player.own > .player-field-row,
+.table-player.own > .eliminated-seat {
+  grid-row: 1;
+}
+.table-player.own > .kabu-action {
+  grid-row: 3;
 }
 .table-player > header strong {
   display: flex;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 0.28rem;
+  justify-content: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -58,7 +58,7 @@ Bestätigungsdialog.
 4. **Reaktion vor und während Einsicht.** `reaction-during-insight`: A
    zieht/legt die 5. Vor dem Ansehen reagiert A mit einer eigenen und nach
    Reset mit einer gegnerischen Karte; die Aktivität bleibt mit derselben
-   10-Sekunden-Deadline offen. „Aktivität ausführen“ und „Ansehen überspringen“
+   20-Sekunden-Deadline offen. „Aktivität ausführen“ und „Ansehen überspringen“
    stehen rechts neben den Stapeln, der Kreis läuft um den Überspringen-Button.
    Nach Auswahl sieht A die Karte direkt an ihrer Position. B kann währenddessen
    mit freier Karte reagieren, ohne As Effekt zu schließen. B darf aber erst

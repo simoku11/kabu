@@ -40,6 +40,16 @@ describe("M3 protected view contracts", () => {
       activePlayerId: playerId,
       drawPileCount: 44,
       turn: { id: "turn-1", number: 1, phase: "awaiting-draw" },
+      lastAction: {
+        id: "reaction-1:reaction:position-1:1",
+        kind: "reaction",
+        actorPlayerId: playerId,
+        source: {
+          playerId: "a59dc026-cbad-4f07-ae8b-31d940e6b001",
+          positionId: "position-1",
+          occupancyVersion: 1,
+        },
+      },
       players: [0, 1].map((seat) => ({
         playerId:
           seat === 0 ? playerId : "a59dc026-cbad-4f07-ae8b-31d940e6b001",
@@ -59,6 +69,11 @@ describe("M3 protected view contracts", () => {
     });
     expect(JSON.stringify(view)).not.toContain("cardId");
     expect(JSON.stringify(view)).not.toContain('"drawPile":[');
+    expect(view.lastAction).toMatchObject({
+      kind: "reaction",
+      actorPlayerId: playerId,
+    });
+    expect(JSON.stringify(view.lastAction)).not.toContain("card");
   });
 });
 

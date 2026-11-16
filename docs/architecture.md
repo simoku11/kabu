@@ -97,7 +97,7 @@ erzeugt eine öffentliche Aufdeckung sowie eine Strafkarte. Eine andere
 Fenster-ID oder veränderte Belegung wird neutral abgelehnt.
 
 Private Effektwerte entstehen erst in `projectRound` für den Effektinhaber und
-werden nach der serverseitigen Ablaufzeit von 10 Sekunden nicht mehr
+werden nach der serverseitigen Ablaufzeit von 20 Sekunden nicht mehr
 projiziert. Ein serialisierter interner Timeout schließt den Effekt; beim
 schwarzen König ist die sichere Standardentscheidung „Behalten“.
 Öffentliche Fehlaufdeckungen enthalten intern Karte, Position, Belegungsversion
@@ -151,6 +151,22 @@ eigenen Feld projiziert. Ablageklick und Feldklick senden weiterhin die
 bestehenden Befehle. Private Effektwerte werden ausschließlich an ihrer
 zugehörigen Positions-ID gerendert und verschwinden mit dem Serversnapshot;
 der kreisförmige Countdown ist rein darstellend.
+
+## Vorgezogene M9-Kartenbewegungen
+
+Der Regelkern speichert nach bestätigten Kartenaktionen ein wertfreies
+`lastAction` mit Akteur und ausschließlich öffentlichen Positionsreferenzen.
+Die personalisierte Projektion ergänzt keine verdeckten Kartenwerte. Der
+Browser leitet daraus kurze, eingabedurchlässige Bewegungen zwischen seinen
+lokalen Tischkoordinaten und einen öffentlichen Texthinweis ab. Beim ersten
+Snapshot, Reconnect oder Sequenzabgleich wird nur der aktuelle Zustand
+übernommen; bereits vergangene Bewegungen werden nicht nachgespielt.
+
+Animierte Kopien sind immer Rückseiten, `aria-hidden` und nehmen keine
+Zeigerereignisse an. Öffentliche beziehungsweise private Kartenwerte bleiben
+ausschließlich in den bereits berechtigten Zielansichten. Reduzierte Bewegung
+und außerhalb des Viewports liegende Wege werden durch eine kurze lokale
+Hervorhebung ersetzt.
 
 ## M7-Wiederaufnahme und Persistenz
 

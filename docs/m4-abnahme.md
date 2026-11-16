@@ -34,7 +34,7 @@ verdeckten Werte sind Teil der festen Testanordnung, nicht einer Diagnoseansicht
    dort eine 5; die Karte trägt „Gehalten“. A kann während der Ansicht nicht
    reagieren. A schließt die Ansicht und tippt sofort dieselbe Position.
    Erwartet: erfolgreicher Reaktionsabwurf, Fenster „verbraucht“, keine neue
-   Fähigkeit. Ein sichtbarer Countdown beginnt bei 10 Sekunden und schließt
+   Fähigkeit. Ein sichtbarer Countdown beginnt bei 20 Sekunden und schließt
    die Ansicht spätestens bei 0 automatisch. Fehler: B sieht den Wert oder A
    kann vor dem Schließen reagieren.
 2. **Gegnerische Einsicht** — `ability-opponent-look`; A zieht/legt die 9 und
@@ -135,7 +135,7 @@ verdeckten Werte sind Teil der festen Testanordnung, nicht einer Diagnoseansicht
 ## Noch nicht vollständig spielbar
 
 M4 erkennt einen endgültig verbleibenden Null-Karten-Fall nur als
-`awaiting-m5`. Kabu-Ansage, Schlusszüge, 3-Sekunden-Abschlussfrist des letzten
+`awaiting-m5`. Kabu-Ansage, Schlusszüge, 6-Sekunden-Abschlussfrist des letzten
 Kabu-Fensters, normale Rundenwertung, nächste Runde und Gesamtgewinner werden
 erst in M5 implementiert. In M4 wird daher ausdrücklich keine Wertung
 angezeigt oder gespeichert.

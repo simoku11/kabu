@@ -45,7 +45,7 @@ bestätigt oder angepasst werden.
   Kreis zeigt die verbleibende Zeit; ein früher Tipp schließt eine einfache
   Einsicht. Danach kann dieselbe Position unmittelbar als Reaktion gewählt
   werden. Das setzt D4/A unverändert um.
-- Die gemeinsame 10-Sekunden-Frist einer Aktivität beginnt bereits mit dem
+- Die gemeinsame 20-Sekunden-Frist einer Aktivität beginnt bereits mit dem
   Ablegen der fähigkeitsberechtigten Karte. Vor der ersten Fähigkeitsauswahl
   darf ihr Besitzer mit einer eigenen oder gegnerischen Karte reagieren; die
   noch offene Fähigkeit und ihre ursprüngliche Deadline bleiben danach
@@ -81,7 +81,7 @@ bestätigt oder angepasst werden.
 - D3, D6 und D7 werden unverändert aus dem beschlossenen digitalen
   Regelvertrag umgesetzt. Das letzte Kabu-Fenster beginnt mit Annahme der
   regulären Ablage, die den letzten noch ausstehenden Schlusszug verbraucht,
-  und endet nach exakt 3.000 ms. Bei `now === deadline` ist die Reaktion zu
+  und endet nach exakt 6.000 ms. Bei `now === deadline` ist die Reaktion zu
   spät.
 - Nach einer gewerteten, aber nicht letzten Runde startet die Folgerunde erst,
   wenn jeder Teilnehmer einmal bewusst „Bereit für nächste Runde“ bestätigt
@@ -111,7 +111,7 @@ bestätigt oder angepasst werden.
 - D9 startet bei nicht erfüllbarer Pflichtkarte dieselbe Rundennummer mit
   denselben Teilnehmern neu und erzeugt keine Wertung.
 - D11 wurde für private Fähigkeitsansichten konkretisiert: Sie enden durch
-  bewussten Abschluss, spätestens aber 10 Sekunden nach akzeptierter Auswahl.
+  bewussten Abschluss, spätestens aber 20 Sekunden nach akzeptierter Auswahl.
   Beim schwarzen König bedeutet Ablauf ohne Entscheidung „Behalten“.
   Öffentliche Fehlaufdeckungen bleiben vorläufig konfigurierbare 2.500 ms
   (`KABU_PUBLIC_REVEAL_MS`) sichtbar.

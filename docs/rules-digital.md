@@ -37,7 +37,7 @@ positionsgebunden und erzeugen genau eine blinde Strafkarte. Währenddessen
 kann dieselbe sichtbare Belegung nicht erneut als Reaktion versucht werden;
 ein Klick erzeugt keine weitere Strafe. Jede direkt ausgelöste Fähigkeit
 besitzt ab ihrer Aktivierung einen sichtbaren, serverautoritativen Countdown
-von insgesamt 10 Sekunden. Danach wird sie automatisch geschlossen; beim
+von insgesamt 20 Sekunden. Danach wird sie automatisch geschlossen; beim
 schwarzen König gilt ohne Entscheidung „Behalten“.
 
 Bei konkurrierenden korrekten Reaktionen wird nur die zuerst vom Server

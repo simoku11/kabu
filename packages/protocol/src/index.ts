@@ -67,6 +67,45 @@ export const PositionViewSchema = z.object({
   card: CardViewSchema.optional(),
 });
 
+const PositionTargetSchema = z.object({
+  playerId: PlayerIdSchema,
+  positionId: z.string(),
+  occupancyVersion: z.number().int().nonnegative(),
+});
+
+const PublicActionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    id: z.string(),
+    kind: z.enum(["draw", "discard-drawn"]),
+    actorPlayerId: PlayerIdSchema,
+  }),
+  z.object({
+    id: z.string(),
+    kind: z.enum(["swap-drawn", "inspect", "reaction", "penalty"]),
+    actorPlayerId: PlayerIdSchema,
+    source: PositionTargetSchema,
+  }),
+  z.object({
+    id: z.string(),
+    kind: z.enum(["ability-swap", "transfer"]),
+    actorPlayerId: PlayerIdSchema,
+    source: PositionTargetSchema,
+    target: PositionTargetSchema,
+  }),
+  z.object({
+    id: z.string(),
+    kind: z.literal("keep"),
+    actorPlayerId: PlayerIdSchema,
+    targets: z.array(PositionTargetSchema).max(2),
+  }),
+  z.object({
+    id: z.string(),
+    kind: z.literal("add-card"),
+    actorPlayerId: PlayerIdSchema,
+    targetPlayerId: PlayerIdSchema,
+  }),
+]);
+
 export const RoundViewSchema = z.object({
   id: z.string().min(1).max(64),
   number: z.number().int().positive(),
@@ -158,6 +197,7 @@ export const RoundViewSchema = z.object({
       }),
     )
     .optional(),
+  lastAction: PublicActionSchema.optional(),
   restartCount: z.number().int().nonnegative().optional(),
   lastRestartReason: z.literal("draw-pile-exhausted").optional(),
   roundCount: z.number().int().positive().optional(),
