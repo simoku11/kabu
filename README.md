@@ -30,16 +30,21 @@ Für einen schnellen Test mit zwei getrennten Spielersitzungen genügt:
 pnpm dev:two
 ```
 
-Der Befehl startet PostgreSQL, führt die Migrationen aus, startet Server und
-Web-App, erstellt eine gemeinsame Lobby und öffnet zwei Chrome-/Chromium-Fenster
-mit temporären, voneinander getrennten Browserprofilen. Mit `Ctrl+C` werden die
-Entwicklungsserver und Browser beendet und die temporären Profile gelöscht. Der
-PostgreSQL-Container bleibt für den nächsten Test verfügbar. Die Namen und
-Rundenzahl lassen sich optional anpassen:
+Der Befehl baut zuerst den aktuell gespeicherten lokalen Code. Nach einem
+erfolgreichen Build startet er PostgreSQL, führt die Migrationen aus, startet
+Server und Web-App, erstellt eine gemeinsame Lobby und öffnet zwei
+Chrome-/Chromium-Fenster mit temporären, voneinander getrennten Browserprofilen.
+Mit `Ctrl+C` werden die Entwicklungsserver und Browser beendet und die
+temporären Profile gelöscht. Der PostgreSQL-Container bleibt für den nächsten
+Test verfügbar. Die Namen und Rundenzahl lassen sich optional anpassen:
 
 ```bash
 pnpm dev:two -- --host Ada --guest Bo --rounds 5
 ```
+
+Falls auf Port 3000 und 5173 bereits eine vollständige Kabu-Entwicklungsumgebung
+läuft, verwendet der Launcher sie weiter und öffnet darin eine neue Lobby. Beim
+Beenden bleiben diese zuvor gestarteten Server aktiv.
 
 Falls Chrome nicht automatisch gefunden wird, kann der Browser mit
 `KABU_BROWSER=/pfad/zu/chrome` oder `--browser /pfad/zu/chrome` angegeben werden.

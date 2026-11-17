@@ -52,9 +52,13 @@ direkt ablegen, Aktivität starten und ein erlaubtes Ziel wählen.
 Position.
 
 - **Handy A:** Die gezogene Karte läuft verdeckt in das gewählte Feld; die alte
-  Feldkarte läuft getrennt zur Ablage.
+  Feldkarte läuft getrennt zur Ablage. Beide Karten werden kurz hervorgehoben
+  und bewegen sich danach zügig.
 - **Handy B:** Dieselben beiden Wege sind an As relativem Sitz erkennbar. Nur
   der Wert der neuen Ablage ist öffentlich.
+- **Beide Handys:** Das gewählte Feld und die Ablage zeigen die neuen Karten
+  erst nach deren Ankunft. Die bisherige oberste Ablagekarte bleibt bis dahin
+  sichtbar. Während der Bewegung darf keine Karte doppelt dargestellt werden.
 
 ### 2.4 Fähigkeitstausch und Behalten
 
@@ -63,12 +67,20 @@ Position.
 
 1. A wählt je eine Karte zweier Spieler und bestätigt bei schwarzem König
    „Tauschen“.
-   - **Handy A:** Beide Karten wechseln sichtbar ihre Positionen; nur die beim
-     schwarzen König erlaubte private Ansicht zeigt Werte.
+   - **Handy A:** Beide gewählten Karten bleiben zunächst deutlich
+     hervorgehoben und wechseln danach langsam sichtbar ihre Positionen; nur
+     die beim schwarzen König erlaubte private Ansicht zeigt Werte.
    - **Handy B:** Zwei Rückseiten kreuzen zwischen den richtigen lokalen
      Spielerfeldern. Keine fremden Werte erscheinen.
+   - **Beide Handys:** Sobald die Karten losfliegen, sind die beiden
+     Ausgangsplätze leer. An keinem Platz darf gleichzeitig noch eine zweite
+     Darstellung derselben Karte stehen.
 2. Szenario zurücksetzen und beim schwarzen König „Behalten“ wählen.
    - **Beide Handys:** Karten senken sich, wechseln aber keinen Platz.
+3. Beide Szenarien nochmals zurücksetzen und vor der Zielauswahl „Nicht
+   ausführen“ wählen.
+   - **Schwarze Dame und schwarzer König:** Die Aktivität endet ohne Auswahl
+     und ohne Kartentausch; keine Karte bleibt hervorgehoben oder gebunden.
 
 ### 2.5 Fremde Reaktion und Ausgleich
 
@@ -90,17 +102,24 @@ passende fremde Position für A.
 
 1. A tippt die im Szenario markierte falsche Karte.
    - **Beide Handys:** Die vorhandene öffentliche Fehlaufdeckung zeigt kurz den
-     Wert. Danach bewegt sich eine Rückseite vom Nachziehstapel zu A; der
-     Hinweis nennt A als Strafkartenempfänger.
+     Wert. Die ausgewählte falsche Karte leuchtet deutlich rot. Danach bewegt
+     sich eine nicht hervorgehobene Rückseite langsam vom Nachziehstapel zu A;
+     der Hinweis nennt A als Strafkartenempfänger.
+   - **Beide Handys:** Der neue Kartenplatz bleibt bis zur Ankunft leer. Die
+     Strafkarte darf während der Bewegung nicht zusätzlich schon im Feld zu
+     sehen sein.
 2. Im roten-König-Szenario wählt A den Empfänger B.
    - **Beide Handys:** Eine Rückseite bewegt sich vom Nachziehstapel zu Bs
      Spielerfeld; kein Wert wird eingeblendet.
 
 ## 3. Frist, Reconnect und reduzierte Bewegung
 
-1. In `reaction-own` eine Reaktion antippen, während noch eine andere Bewegung
-   läuft. Die Auswahl muss sofort reagieren; Animationen dürfen keine Klicks
-   abfangen und keine Serverfrist verändern.
+1. In `reaction-own` eine eigene Reaktionskarte antippen. Die Karte bleibt
+   kurz hervorgehoben und bewegt sich danach zügig von ihrem exakten Kartenplatz
+   zur Ablage. Die bisherige oberste Ablagekarte bleibt bis zur Ankunft sichtbar;
+   es darf keine doppelte Darstellung geben. Eine weitere Reaktion antippen,
+   während noch eine andere Bewegung läuft. Die Auswahl muss sofort reagieren;
+   Animationen dürfen keine Klicks abfangen und keine Serverfrist verändern.
 2. Während einer offenen Aktion auf Handy B 5–10 Sekunden Flugmodus aktivieren
    und danach zurückkehren. Der aktuelle Snapshot muss ohne Nachholbewegungen
    erscheinen; es darf keine Aktion doppelt laufen. Danach einmal regulär

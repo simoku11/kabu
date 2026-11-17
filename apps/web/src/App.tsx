@@ -43,10 +43,10 @@ const EFFECT_DURATION_MS = 20_000;
 const CARD_MOVE_DURATION_MS = 300;
 const CARD_HIGHLIGHT_DURATION_MS = 360;
 const CARD_MOVE_STAGGER_MS = 65;
-const CARD_SWAP_DURATION_MS = 680;
-const CARD_SWAP_HIGHLIGHT_MS = 820;
-const ABILITY_SWAP_PREVIEW_MS = 520;
-const ABILITY_SWAP_DURATION_MS = 1_050;
+const ABILITY_SWAP_PREVIEW_MS = 1_000;
+const ABILITY_SWAP_DURATION_MS = 1_650;
+const QUICK_CARD_PREVIEW_MS = 100;
+const QUICK_CARD_MOVE_MS = 300;
 
 function codeFromLocation(): string | undefined {
   const match = /^\/room\/([A-HJ-NP-Z2-9]{6})\/?$/iu.exec(
@@ -1087,14 +1087,28 @@ function GameScreen({
           </button>
         </div>
       ) : ownEffect.phase === "selecting" ? (
-        <button
-          disabled={pending || !online || effectSelectionActive}
-          onClick={() => void activateOwnEffect()}
-        >
-          {effectSelectionActive
-            ? t("Aktivität aktiv")
-            : t("Aktivität ausführen")}
-        </button>
+        <div className="pile-effect-actions">
+          <button
+            disabled={pending || !online || effectSelectionActive}
+            onClick={() => void activateOwnEffect()}
+          >
+            {effectSelectionActive
+              ? t("Aktivität aktiv")
+              : t("Aktivität ausführen")}
+          </button>
+          {(ownEffect.kind === "blind-swap" ||
+            ownEffect.kind === "inspect-swap") && (
+            <button
+              className="secondary"
+              disabled={pending || !online}
+              onClick={() =>
+                send({ type: "game.effect.skip", effectId: ownEffect.id })
+              }
+            >
+              {t("Nicht ausführen")}
+            </button>
+          )}
+        </div>
       ) : ownEffect.kind === "inspect-swap" &&
         ownEffect.phase === "deciding" ? (
         <div className="pile-effect-actions">
@@ -1253,7 +1267,6 @@ function GameScreen({
               className="small secondary"
               type="button"
               aria-label={t("Hauptmenü öffnen")}
-              disabled={pending}
               onClick={() => {
                 setCardGuideOpen(false);
                 setLeaveDialogOpen(true);
@@ -1929,7 +1942,9 @@ function useTableMotion(
   tableRef: RefObject<HTMLElement | null>,
 ) {
   const previousRects = useRef(new Map<string, DOMRect>());
+  const previousPositionVersions = useRef(new Map<string, string>());
   const previousActionId = useRef<string | undefined>(undefined);
+  const previousDiscardVisual = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     const root = tableRef.current;
@@ -1939,6 +1954,19 @@ function useTableMotion(
       const id = node.dataset.motionId;
       if (id) current.set(id, node.getBoundingClientRect());
     });
+    const currentPositionVersions = new Map<string, string>();
+    root
+      .querySelectorAll<HTMLElement>(
+        "[data-position-id][data-occupancy-version]",
+      )
+      .forEach((node) => {
+        const id = node.dataset.positionId;
+        const version = node.dataset.occupancyVersion;
+        if (id && version) currentPositionVersions.set(id, version);
+      });
+    const nextDiscardVisual = root
+      .querySelector<HTMLElement>('[data-motion-id="discard"] > *')
+      ?.cloneNode(true) as HTMLElement | undefined;
     const action = game.lastAction;
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -1954,14 +1982,35 @@ function useTableMotion(
       rect.right > 0 &&
       rect.top < innerHeight &&
       rect.left < innerWidth;
-    const highlight = (id: string, duration = CARD_HIGHLIGHT_DURATION_MS) => {
+    const highlight = (
+      id: string,
+      duration = CARD_HIGHLIGHT_DURATION_MS,
+      tone: "gold" | "red" = "gold",
+    ) => {
       const node = root.querySelector<HTMLElement>(
         `[data-motion-id="${CSS.escape(id)}"]`,
       );
+      const outlineColor =
+        tone === "red" ? "rgba(223, 80, 72, .95)" : "rgba(240, 198, 93, .85)";
       node?.animate?.(
         [
-          { outline: "3px solid rgba(240, 198, 93, .85)" },
-          { outline: "3px solid rgba(240, 198, 93, 0)" },
+          {
+            outline: `3px solid ${outlineColor}`,
+            boxShadow:
+              tone === "red" ? "0 0 1.15rem rgba(223, 80, 72, .9)" : "none",
+            offset: 0,
+          },
+          {
+            outline: `3px solid ${outlineColor}`,
+            boxShadow:
+              tone === "red" ? "0 0 .7rem rgba(223, 80, 72, .55)" : "none",
+            offset: 0.9,
+          },
+          {
+            outline: `3px solid ${outlineColor.replace(/\.[0-9]+\)/u, "0)")}`,
+            boxShadow: "none",
+            offset: 1,
+          },
         ],
         {
           duration: reduced ? 90 : duration,
@@ -1972,16 +2021,24 @@ function useTableMotion(
     const move = (
       fromId: string,
       toId: string,
-      options: { delay?: number; duration?: number; arc?: number } = {},
+      options: {
+        delay?: number;
+        duration?: number;
+        arc?: number;
+        highlighted?: boolean;
+        preferCurrentFrom?: boolean;
+      } = {},
     ) => {
-      const from = old.get(fromId) ?? current.get(fromId);
+      const from = options.preferCurrentFrom
+        ? (current.get(fromId) ?? old.get(fromId))
+        : (old.get(fromId) ?? current.get(fromId));
       const to = current.get(toId) ?? old.get(toId);
       if (!from || !to || reduced || !visible(from) || !visible(to)) {
         highlight(toId);
         return;
       }
       const copy = document.createElement("div");
-      copy.className = "card-motion-copy";
+      copy.className = `card-motion-copy${options.highlighted ? " emphasized-card" : ""}`;
       copy.setAttribute("aria-hidden", "true");
       Object.assign(copy.style, {
         left: `${from.left}px`,
@@ -2016,12 +2073,49 @@ function useTableMotion(
       animation.finished
         .finally(() => copy.remove())
         .catch(() => copy.remove());
+      return animation;
+    };
+    const preservePreviousDiscard = () => {
+      const discard = root.querySelector<HTMLElement>(
+        '[data-motion-id="discard"]',
+      );
+      const previous = previousDiscardVisual.current?.cloneNode(
+        true,
+      ) as HTMLElement | null;
+      if (!discard || !previous) return undefined;
+      const currentChildren = Array.from(discard.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement,
+      );
+      currentChildren.forEach((child) => {
+        child.style.visibility = "hidden";
+      });
+      previous.classList.add("card-motion-stationary-discard");
+      previous.setAttribute("aria-hidden", "true");
+      discard.append(previous);
+      return () => {
+        previous.remove();
+        currentChildren.forEach((child) => {
+          child.style.removeProperty("visibility");
+        });
+      };
     };
 
     if (shouldAnimate) {
       const actor = action.actorPlayerId;
-      const newestPosition = (playerId: string) =>
-        [...current.keys()].find((id) => {
+      const newestPosition = (playerId: string) => {
+        const changedPositionId = [...currentPositionVersions].find(
+          ([positionId, version]) => {
+            if (previousPositionVersions.current.get(positionId) === version)
+              return false;
+            return Boolean(
+              root
+                .querySelector(`[data-position-id="${CSS.escape(positionId)}"]`)
+                ?.closest(`[data-player-id="${CSS.escape(playerId)}"]`),
+            );
+          },
+        )?.[0];
+        if (changedPositionId) return `position:${changedPositionId}`;
+        return [...current.keys()].find((id) => {
           if (!id.startsWith("position:") || old.has(id)) return false;
           return Boolean(
             root
@@ -2029,6 +2123,7 @@ function useTableMotion(
               ?.closest(`[data-player-id="${CSS.escape(playerId)}"]`),
           );
         });
+      };
       if (action.kind === "draw")
         move(
           "draw-pile",
@@ -2040,58 +2135,198 @@ function useTableMotion(
           "discard",
         );
       else if (action.kind === "swap-drawn") {
-        highlight(
-          `position:${action.source.positionId}`,
-          CARD_SWAP_HIGHLIGHT_MS,
+        const sourceId = `position:${action.source.positionId}`;
+        const drawnId = old.has(`drawn:${actor}`)
+          ? `drawn:${actor}`
+          : `player:${actor}`;
+        const motionDuration = QUICK_CARD_PREVIEW_MS + QUICK_CARD_MOVE_MS;
+        highlight(sourceId, motionDuration);
+        highlight(drawnId, motionDuration);
+        const sourceNode = root.querySelector<HTMLElement>(
+          `[data-motion-id="${CSS.escape(sourceId)}"]`,
         );
-        move(`position:${action.source.positionId}`, "discard", {
-          duration: CARD_SWAP_DURATION_MS,
+        const discardNode = root.querySelector<HTMLElement>(
+          '[data-motion-id="discard"]',
+        );
+        const sourceRect = old.get(sourceId);
+        const drawnRect = old.get(drawnId) ?? current.get(drawnId);
+        const discardRect = current.get("discard") ?? old.get("discard");
+        const canShowFullSwap =
+          !reduced &&
+          sourceNode &&
+          discardNode &&
+          sourceRect &&
+          drawnRect &&
+          discardRect &&
+          visible(sourceRect) &&
+          visible(drawnRect) &&
+          visible(discardRect);
+        if (canShowFullSwap) {
+          sourceNode.classList.add("card-motion-vacated");
+        }
+        const restoreDiscard = canShowFullSwap
+          ? preservePreviousDiscard()
+          : undefined;
+        if (canShowFullSwap && !restoreDiscard)
+          discardNode.classList.add("card-motion-vacated");
+        const discardedMotion = move(sourceId, "discard", {
+          delay: QUICK_CARD_PREVIEW_MS,
+          duration: QUICK_CARD_MOVE_MS,
+          arc: -16,
+          highlighted: true,
         });
-        move(
-          old.has(`drawn:${actor}`) ? `drawn:${actor}` : `player:${actor}`,
-          `position:${action.source.positionId}`,
-          {
-            delay: CARD_MOVE_STAGGER_MS * 2,
-            duration: CARD_SWAP_DURATION_MS,
-          },
-        );
+        const drawnMotion = move(drawnId, sourceId, {
+          delay: QUICK_CARD_PREVIEW_MS + CARD_MOVE_STAGGER_MS,
+          duration: QUICK_CARD_MOVE_MS,
+          arc: 16,
+          highlighted: true,
+        });
+        if (canShowFullSwap && discardedMotion && drawnMotion) {
+          void Promise.allSettled([
+            discardedMotion.finished,
+            drawnMotion.finished,
+          ]).then(() => {
+            sourceNode.classList.remove("card-motion-vacated");
+            discardNode.classList.remove("card-motion-vacated");
+            restoreDiscard?.();
+          });
+        } else {
+          sourceNode?.classList.remove("card-motion-vacated");
+          discardNode?.classList.remove("card-motion-vacated");
+          restoreDiscard?.();
+        }
       } else if (action.kind === "ability-swap") {
-        highlight(
-          `position:${action.source.positionId}`,
-          ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS,
+        const sourceId = `position:${action.source.positionId}`;
+        const targetId = `position:${action.target.positionId}`;
+        highlight(sourceId, ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS);
+        highlight(targetId, ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS);
+        const sourceNode = root.querySelector<HTMLElement>(
+          `[data-motion-id="${CSS.escape(sourceId)}"]`,
         );
-        highlight(
-          `position:${action.target.positionId}`,
-          ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS,
+        const targetNode = root.querySelector<HTMLElement>(
+          `[data-motion-id="${CSS.escape(targetId)}"]`,
         );
-        move(
-          `position:${action.source.positionId}`,
-          `position:${action.target.positionId}`,
-          {
-            delay: ABILITY_SWAP_PREVIEW_MS,
-            duration: ABILITY_SWAP_DURATION_MS,
-            arc: -22,
-          },
+        const canShowFullSwap =
+          !reduced &&
+          sourceNode &&
+          targetNode &&
+          old.has(sourceId) &&
+          old.has(targetId) &&
+          visible(old.get(sourceId)!) &&
+          visible(old.get(targetId)!);
+        if (canShowFullSwap) {
+          sourceNode.classList.add("card-motion-vacated");
+          targetNode.classList.add("card-motion-vacated");
+        }
+        const firstMotion = move(sourceId, targetId, {
+          delay: ABILITY_SWAP_PREVIEW_MS,
+          duration: ABILITY_SWAP_DURATION_MS,
+          arc: -22,
+          highlighted: true,
+        });
+        const secondMotion = move(targetId, sourceId, {
+          delay: ABILITY_SWAP_PREVIEW_MS + CARD_MOVE_STAGGER_MS,
+          duration: ABILITY_SWAP_DURATION_MS,
+          arc: 22,
+          highlighted: true,
+        });
+        if (canShowFullSwap && firstMotion && secondMotion) {
+          void Promise.allSettled([
+            firstMotion.finished,
+            secondMotion.finished,
+          ]).then(() => {
+            sourceNode.classList.remove("card-motion-vacated");
+            targetNode.classList.remove("card-motion-vacated");
+          });
+        } else {
+          sourceNode?.classList.remove("card-motion-vacated");
+          targetNode?.classList.remove("card-motion-vacated");
+        }
+      } else if (
+        action.kind === "reaction" &&
+        action.source.playerId === action.actorPlayerId
+      ) {
+        const sourceId = `position:${action.source.positionId}`;
+        const motionDuration = QUICK_CARD_PREVIEW_MS + QUICK_CARD_MOVE_MS;
+        highlight(sourceId, motionDuration);
+        const discardNode = root.querySelector<HTMLElement>(
+          '[data-motion-id="discard"]',
         );
-        move(
-          `position:${action.target.positionId}`,
-          `position:${action.source.positionId}`,
-          {
-            delay: ABILITY_SWAP_PREVIEW_MS + CARD_MOVE_STAGGER_MS,
-            duration: ABILITY_SWAP_DURATION_MS,
-            arc: 22,
-          },
-        );
-      } else if (action.kind === "reaction")
+        const sourceRect = old.get(sourceId);
+        const discardRect = current.get("discard") ?? old.get("discard");
+        const canShowFullReaction =
+          !reduced &&
+          discardNode &&
+          sourceRect &&
+          discardRect &&
+          visible(sourceRect) &&
+          visible(discardRect);
+        const restoreDiscard = canShowFullReaction
+          ? preservePreviousDiscard()
+          : undefined;
+        if (canShowFullReaction && !restoreDiscard)
+          discardNode.classList.add("card-motion-vacated");
+        const reactionMotion = move(sourceId, "discard", {
+          delay: QUICK_CARD_PREVIEW_MS,
+          duration: QUICK_CARD_MOVE_MS,
+          arc: -16,
+          highlighted: true,
+          preferCurrentFrom: true,
+        });
+        if (canShowFullReaction && reactionMotion) {
+          void reactionMotion.finished
+            .finally(() => {
+              discardNode.classList.remove("card-motion-vacated");
+              restoreDiscard?.();
+            })
+            .catch(() => undefined);
+        } else {
+          discardNode?.classList.remove("card-motion-vacated");
+          restoreDiscard?.();
+        }
+      } else if (action.kind === "reaction") {
         move(`position:${action.source.positionId}`, "discard");
-      else if (action.kind === "transfer")
+      } else if (action.kind === "transfer")
         move(
           `position:${action.source.positionId}`,
           `position:${action.target.positionId}`,
         );
       else if (action.kind === "penalty") {
-        highlight(`position:${action.source.positionId}`);
-        move("draw-pile", newestPosition(actor) ?? `player:${actor}`);
+        const sourceId = `position:${action.source.positionId}`;
+        const destinationId = newestPosition(actor) ?? `player:${actor}`;
+        const motionDuration =
+          ABILITY_SWAP_PREVIEW_MS + ABILITY_SWAP_DURATION_MS;
+        highlight(sourceId, motionDuration, "red");
+        const destinationNode = root.querySelector<HTMLElement>(
+          `[data-motion-id="${CSS.escape(destinationId)}"]`,
+        );
+        const drawRect = old.get("draw-pile") ?? current.get("draw-pile");
+        const destinationRect =
+          current.get(destinationId) ?? old.get(destinationId);
+        const canShowFullPenalty =
+          !reduced &&
+          destinationId.startsWith("position:") &&
+          destinationNode &&
+          drawRect &&
+          destinationRect &&
+          visible(drawRect) &&
+          visible(destinationRect);
+        if (canShowFullPenalty)
+          destinationNode.classList.add("card-motion-vacated");
+        const penaltyMotion = move("draw-pile", destinationId, {
+          delay: ABILITY_SWAP_PREVIEW_MS,
+          duration: ABILITY_SWAP_DURATION_MS,
+          arc: -16,
+        });
+        if (canShowFullPenalty && penaltyMotion) {
+          void penaltyMotion.finished
+            .finally(() =>
+              destinationNode.classList.remove("card-motion-vacated"),
+            )
+            .catch(() => undefined);
+        } else {
+          destinationNode?.classList.remove("card-motion-vacated");
+        }
       } else if (action.kind === "add-card")
         move(
           "draw-pile",
@@ -2107,7 +2342,9 @@ function useTableMotion(
     }
 
     previousRects.current = current;
+    previousPositionVersions.current = currentPositionVersions;
     previousActionId.current = action?.id;
+    previousDiscardVisual.current = nextDiscardVisual ?? null;
   }, [game, online, tableRef]);
 }
 
@@ -2215,9 +2452,6 @@ export function GameTable({
     const fieldColumns = new Set(
       player.positions.map((position) => position.column),
     ).size;
-    const count = player.positions.filter(
-      (position) => position.occupied,
-    ).length;
     const activePlayer = player.playerId === game.activePlayerId;
     const anchorOffset = stableFieldAnchorOffset(
       player.positions.map((position) => position.column),
@@ -2267,7 +2501,7 @@ export function GameTable({
                 : undefined
             }
           >
-            {count > 0 && (
+            {player.positions.length > 0 && (
               <div className={own ? "own-card-field" : "player-card-field"}>
                 <PlayerField
                   positions={player.positions}
@@ -2297,23 +2531,32 @@ export function GameTable({
                 />
               </div>
             )}
-            {activePlayer && game.turn.phase === "awaiting-decision" && (
-              <div
-                className={`drawn-card-slot occupied${own ? " private" : " public"}`}
-                data-motion-id={`drawn:${player.playerId}`}
-                aria-label={t("{name} hält die gezogene Karte", {
-                  name: participant?.name ?? t("Spieler"),
-                })}
-              >
-                {own && drawnCard ? (
+            <div
+              className={`drawn-card-slot${activePlayer && game.turn.phase === "awaiting-decision" ? ` occupied${own ? " private" : " public"}` : ""}`}
+              data-motion-id={`drawn:${player.playerId}`}
+              aria-hidden={
+                activePlayer && game.turn.phase === "awaiting-decision"
+                  ? undefined
+                  : true
+              }
+              aria-label={
+                activePlayer && game.turn.phase === "awaiting-decision"
+                  ? t("{name} hält die gezogene Karte", {
+                      name: participant?.name ?? t("Spieler"),
+                    })
+                  : undefined
+              }
+            >
+              {activePlayer && game.turn.phase === "awaiting-decision" ? (
+                own && drawnCard ? (
                   <CardFace card={drawnCard} />
                 ) : (
                   <span className="card-back" aria-hidden="true">
                     ♦
                   </span>
-                )}
-              </div>
-            )}
+                )
+              ) : null}
+            </div>
           </div>
         )}
         {own && kabuAction && (
@@ -2470,7 +2713,6 @@ function PlayerField({
   onSelect?: (positionId: string, occupancyVersion: number) => void;
 }) {
   const { t } = useI18n();
-  const occupiedPositions = positions.filter((position) => position.occupied);
   const orderedColumns = visualColumnOrder(
     positions.map((position) => position.column),
   );
@@ -2489,13 +2731,30 @@ function PlayerField({
       }}
     >
       {fieldRows.flatMap((row) =>
-        occupiedPositions
+        positions
           .filter((position) => position.row === row)
           .toSorted(
             (left, right) =>
               visualColumn.get(left.column)! - visualColumn.get(right.column)!,
           )
           .map((position) => {
+            if (!position.occupied) {
+              const rowLabel = row === "near" ? t("Nahe") : t("Ferne");
+              return (
+                <div
+                  className="field-position empty-position"
+                  key={position.id}
+                  role="img"
+                  aria-label={`${t("Leerer Kartenplatz")} ${t("von")} ${ownerName}, ${rowLabel.toLowerCase()} ${position.column + 1}. ${t("Hier lag eine Karte.")}`}
+                  data-position-id={position.id}
+                  style={{
+                    gridColumn: visualColumn.get(position.column),
+                    gridRow: visualRow.get(row),
+                  }}
+                  data-motion-id={`position:${position.id}`}
+                />
+              );
+            }
             const reveal = publicReveals.find(
               (item) =>
                 item.target.positionId === position.id &&

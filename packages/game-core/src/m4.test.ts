@@ -243,6 +243,29 @@ describe("M4 abilities", () => {
     expect(JSON.stringify(projectRound(state, "p2"))).not.toContain("cardId");
   });
 
+  it.each([
+    [cardId("spades", "queen"), "blind-swap"],
+    [cardId("clubs", "king"), "inspect-swap"],
+  ] as const)("allows declining the optional %s activity", (card, kind) => {
+    const state = direct(started(), card);
+    const effect = state.effects[0]!;
+    const before = state.players.map((player) =>
+      player.positions.map((position) => position.cardId),
+    );
+
+    expect(effect.kind).toBe(kind);
+    const skipped = skipEffect(state, effect.ownerPlayerId, effect.id);
+    if (!skipped.ok) throw new Error(skipped.message);
+
+    expect(
+      skipped.state.players.map((player) =>
+        player.positions.map((position) => position.cardId),
+      ),
+    ).toEqual(before);
+    expect(skipped.state.effects).toEqual([]);
+    expect(skipped.state.lastAction).toMatchObject({ kind: "keep" });
+  });
+
   it("gives a blind card with the red king and allows self as recipient", () => {
     let state = direct(started(), cardId("hearts", "king"));
     const effect = state.effects[0]!;
@@ -573,6 +596,40 @@ describe("M4 reactions and conflicts", () => {
     expect(late.ok).toBe(true);
     if (late.ok)
       expect(occupiedCountForTest(late.state, "p2")).toBe(lateCount + 1);
+  });
+
+  it("gives repeated penalties on the same card unique animation IDs", () => {
+    let state = direct(started(), cardId("hearts", "9"));
+    const windowId = state.reactionWindow!.id;
+    const wrong = positionTarget(state, "p1");
+    putAt(state, wrong, cardId("clubs", "3"));
+
+    const first = reactWithPosition(
+      state,
+      "p1",
+      windowId,
+      wrong,
+      random,
+      1_000,
+      2_500,
+    );
+    if (!first.ok) throw new Error(first.message);
+    state = first.state;
+    const firstActionId = state.lastAction!.id;
+
+    const second = reactWithPosition(
+      state,
+      "p1",
+      windowId,
+      wrong,
+      random,
+      3_501,
+      2_500,
+    );
+    if (!second.ok) throw new Error(second.message);
+
+    expect(second.state.lastAction).toMatchObject({ kind: "penalty" });
+    expect(second.state.lastAction!.id).not.toBe(firstActionId);
   });
 
   it("rejects stale, held and old-window targets without penalties", () => {

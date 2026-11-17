@@ -196,7 +196,7 @@ describe("shared game table", () => {
     expect(markup).toMatch(/<button class="draw-pile" disabled=""/u);
   });
 
-  it("renders backs and extensions without placeholders for empty positions", () => {
+  it("keeps empty positions as fixed placeholders in the card grid", () => {
     const round = game(3);
     const opponent = round.players[1]!;
     opponent.positions[0]!.occupied = false;
@@ -218,8 +218,10 @@ describe("shared game table", () => {
     const markup = renderTable(round);
     expect(markup).not.toContain("position-marker");
     expect(markup).not.toContain("field-status-note");
-    expect(markup).not.toContain("frei");
-    expect(markup).not.toContain(opponent.positions[0]!.id);
+    expect(markup).toContain('class="field-position empty-position"');
+    expect(markup).not.toContain("Karte abgelegt");
+    expect(markup).toContain("Hier lag eine Karte.");
+    expect(markup).toContain(opponent.positions[0]!.id);
     expect(markup).toContain(`${opponent.playerId}:near:2`);
     expect(markup).toContain("grid-row:1");
     expect(markup).toContain("grid-row:2");
@@ -227,6 +229,25 @@ describe("shared game table", () => {
     expect(markup.match(/0 Punkte/gu)).toHaveLength(1);
     expect(markup).not.toContain("spades");
     expect(markup).not.toContain("clubs");
+  });
+
+  it("always renders all four original slots when every card is gone", () => {
+    const round = game(2);
+    const own = round.players[0]!;
+    own.positions.forEach((position) => {
+      position.occupied = false;
+    });
+
+    const markup = renderTable(round);
+    const ownField = markup.slice(
+      markup.indexOf(`data-player-id="${own.playerId}"`),
+    );
+    expect(
+      ownField.match(/class="field-position empty-position"/gu),
+    ).toHaveLength(4);
+    expect(ownField).toContain(
+      "grid-template-columns:repeat(2, var(--card-width))",
+    );
   });
 
   it("passes opponent positions through the same validated target callback", () => {
@@ -401,7 +422,7 @@ describe("shared game table", () => {
     expect(markup.match(/--card-width:/gu)).toHaveLength(1);
   });
 
-  it("keeps empty start slots as invisible anchors for the remaining cards", () => {
+  it("keeps empty start slots as visible anchors for the remaining cards", () => {
     const round = game(2);
     const own = round.players[0]!;
     for (const position of own.positions) {
@@ -416,10 +437,13 @@ describe("shared game table", () => {
     expect(ownField).toContain(
       `data-position-id="${own.playerId}:near:0" data-occupancy-version="1" style="grid-column:1;grid-row:2"`,
     );
-    expect(ownField).not.toContain(`${own.playerId}:far:0`);
-    expect(ownField).not.toContain(`${own.playerId}:far:1`);
-    expect(ownField).not.toContain(`${own.playerId}:near:1`);
-    expect(ownField).not.toContain("frei");
+    expect(ownField).toContain(`${own.playerId}:far:0`);
+    expect(ownField).toContain(`${own.playerId}:far:1`);
+    expect(ownField).toContain(`${own.playerId}:near:1`);
+    expect(
+      ownField.match(/class="field-position empty-position"/gu),
+    ).toHaveLength(3);
+    expect(ownField).not.toContain("Karte abgelegt");
   });
 
   it("marks the active player visually without written turn labels", () => {
@@ -519,7 +543,10 @@ describe("shared game table", () => {
         onDiscardDrawn={() => undefined}
       />,
     );
-    expect(markupWithoutDrawnCard).not.toContain("drawn-card-slot");
+    expect(markupWithoutDrawnCard).toContain('class="drawn-card-slot"');
+    expect(markupWithoutDrawnCard).not.toContain(
+      'class="drawn-card-slot occupied',
+    );
     expect(markup).toContain('class="drawn-card-slot occupied private"');
     expect(markup).toContain('class="own-card-field"');
     expect(markup).toContain("P0 hält die gezogene Karte");

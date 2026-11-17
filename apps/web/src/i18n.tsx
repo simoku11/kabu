@@ -164,6 +164,7 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     "Aktivität aktiv": "Action active",
     "Aktivität ausführen": "Use action",
     "Ansehen überspringen": "Skip viewing",
+    "Nicht ausführen": "Do not use",
     Tauschen: "Swap",
     Behalten: "Keep",
     "Verbindung unterbrochen": "Connection lost",
@@ -254,6 +255,8 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Ablagestapel: "Discard pile",
     "Ablagestapel leer": "Discard pile empty",
     Leer: "Empty",
+    "Leerer Kartenplatz": "Empty card slot",
+    "Hier lag eine Karte.": "A card was here.",
     "Reaktionsfenster: keines": "Reaction window: none",
     "Reaktionsfenster offen · Rang {rank}":
       "Reaction window open · Rank {rank}",
@@ -456,6 +459,7 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     "Aktivität aktiv": "Действие активно",
     "Aktivität ausführen": "Выполнить действие",
     "Ansehen überspringen": "Пропустить просмотр",
+    "Nicht ausführen": "Не выполнять",
     Tauschen: "Поменять",
     Behalten: "Оставить",
     "Verbindung unterbrochen": "Соединение прервано",
@@ -546,6 +550,8 @@ const translations: Record<Exclude<Language, "de">, Record<string, string>> = {
     Ablagestapel: "Сброс",
     "Ablagestapel leer": "Сброс пуст",
     Leer: "Пусто",
+    "Leerer Kartenplatz": "Пустое место для карты",
+    "Hier lag eine Karte.": "Здесь лежала карта.",
     "Reaktionsfenster: keines": "Окно реакции: отсутствует",
     "Reaktionsfenster offen · Rang {rank}":
       "Окно реакции открыто · Ранг {rank}",

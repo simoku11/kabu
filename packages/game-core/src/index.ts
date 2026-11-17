@@ -1393,13 +1393,15 @@ export function skipEffect(
   if (
     !effect ||
     effect.ownerPlayerId !== playerId ||
-    !["inspect-own", "inspect-opponent"].includes(effect.kind) ||
+    !["inspect-own", "inspect-opponent", "blind-swap", "inspect-swap"].includes(
+      effect.kind,
+    ) ||
     effect.phase !== "selecting" ||
     (effect.expiresAt !== undefined && effect.expiresAt <= now)
   )
     return rejected(
       "INVALID_EFFECT",
-      "Dieser Effekt kann nicht übersprungen werden.",
+      "Diese Aktivität kann nicht abgelehnt werden.",
     );
   const next = structuredClone(state);
   next.lastAction = {
@@ -1616,8 +1618,9 @@ export function reactWithPosition(
     next.publicReveals = next.publicReveals.filter(
       (item) => item.expiresAt > now,
     );
+    const revealId = nextId(next, "reveal");
     next.publicReveals.push({
-      id: nextId(next, "reveal"),
+      id: revealId,
       target,
       cardId: selectedCard,
       expiresAt: now + revealDurationMs,
@@ -1627,7 +1630,7 @@ export function reactWithPosition(
     if (!penalty.ok)
       return { ok: true, state: restartAfterExhaustion(next, random) };
     penalty.state.lastAction = {
-      id: `${windowId}:penalty:${target.positionId}:${target.occupancyVersion}`,
+      id: `${revealId}:penalty`,
       kind: "penalty",
       actorPlayerId: playerId,
       source: target,

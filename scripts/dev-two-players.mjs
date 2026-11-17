@@ -106,20 +106,34 @@ function run(command, args) {
   });
 }
 
-async function assertPortAvailable(port, service) {
+async function isPortAvailable(port) {
   const probe = createServer();
-  await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     probe.once("error", (error) => {
-      if (error?.code === "EADDRINUSE") {
-        reject(
-          new Error(
-            `Port ${port} ist bereits belegt (${service}). Beende den laufenden Entwicklungsserver und versuche es erneut.`,
-          ),
-        );
-      } else reject(error);
+      if (error?.code === "EADDRINUSE") resolve(false);
+      else reject(error);
     });
-    probe.listen(port, "0.0.0.0", () => probe.close(resolve));
+    probe.listen(port, "0.0.0.0", () => probe.close(() => resolve(true)));
   });
+}
+
+async function isKabuEnvironmentRunning() {
+  try {
+    const [healthResponse, webResponse] = await Promise.all([
+      fetch(`${API_ORIGIN}/api/health`),
+      fetch(WEB_ORIGIN),
+    ]);
+    if (!healthResponse.ok || !webResponse.ok) return false;
+    const health = await healthResponse.json();
+    const page = await webResponse.text();
+    return (
+      health?.status === "ok" &&
+      health?.service === "kabu-server" &&
+      page.includes('id="root"')
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function waitForUrl(url, child, timeoutMs = 60_000) {
@@ -278,6 +292,8 @@ const children = [];
 const profileRoot = await mkdtemp(path.join(tmpdir(), "kabu-two-players-"));
 let bootstrapServer;
 let cleaningUp = false;
+let devServer;
+let reusedEnvironment = false;
 
 async function cleanup(exitCode = 0) {
   if (cleaningUp) return;
@@ -300,30 +316,52 @@ process.once("SIGINT", () => void cleanup(0));
 process.once("SIGTERM", () => void cleanup(0));
 
 try {
-  await Promise.all([
-    assertPortAvailable(3000, "Kabu-Server"),
-    assertPortAvailable(5173, "Vite"),
-  ]);
-  console.log("PostgreSQL starten …");
-  await run("docker", [
-    "compose",
-    "up",
-    "-d",
-    "--wait",
-    "--wait-timeout",
-    "60",
-    "postgres",
-  ]);
-  console.log("Datenbank migrieren …");
-  await run("pnpm", ["db:migrate"]);
+  console.log("Aktuellen lokalen Code bauen …");
+  await run("pnpm", ["build"]);
 
-  console.log("Kabu-Server und Web-App starten …");
-  const devServer = startProcess("pnpm", ["dev"]);
-  children.push(devServer);
-  await Promise.all([
-    waitForUrl(`${API_ORIGIN}/api/health`, devServer),
-    waitForUrl(WEB_ORIGIN, devServer),
+  const [apiPortAvailable, webPortAvailable] = await Promise.all([
+    isPortAvailable(3000),
+    isPortAvailable(5173),
   ]);
+  if (apiPortAvailable && webPortAvailable) {
+    console.log("PostgreSQL starten …");
+    await run("docker", [
+      "compose",
+      "up",
+      "-d",
+      "--wait",
+      "--wait-timeout",
+      "60",
+      "postgres",
+    ]);
+    console.log("Datenbank migrieren …");
+    await run("pnpm", ["db:migrate"]);
+
+    console.log("Kabu-Server und Web-App starten …");
+    devServer = startProcess("pnpm", ["dev"]);
+    children.push(devServer);
+    await Promise.all([
+      waitForUrl(`${API_ORIGIN}/api/health`, devServer),
+      waitForUrl(WEB_ORIGIN, devServer),
+    ]);
+  } else if (
+    !apiPortAvailable &&
+    !webPortAvailable &&
+    (await isKabuEnvironmentRunning())
+  ) {
+    reusedEnvironment = true;
+    console.log("Vorhandenen Kabu-Server und vorhandene Web-App verwenden …");
+  } else {
+    const occupied = [
+      !apiPortAvailable ? "3000" : undefined,
+      !webPortAvailable ? "5173" : undefined,
+    ]
+      .filter(Boolean)
+      .join(" und ");
+    throw new Error(
+      `Port ${occupied} ist belegt, dort läuft aber keine vollständige Kabu-Entwicklungsumgebung. Beende den belegenden Prozess und versuche es erneut.`,
+    );
+  }
 
   const lobby = await prepareLobby(options);
   const bootstrap = await createBootstrapServer(
@@ -352,19 +390,27 @@ try {
   console.log(
     `\nLobby ${lobby.roomCode} ist für ${options.host} und ${options.guest} geöffnet.`,
   );
-  console.log("Mit Ctrl+C werden Server und Browser beendet.");
+  console.log(
+    reusedEnvironment
+      ? "Mit Ctrl+C werden die beiden Browser beendet; die vorhandenen Server laufen weiter."
+      : "Mit Ctrl+C werden Server und Browser beendet.",
+  );
 
-  await new Promise((resolve, reject) => {
-    devServer.once("exit", (code, signal) => {
-      if (!cleaningUp) {
-        reject(
-          new Error(
-            `Der Entwicklungsserver wurde ${signal ? `durch ${signal} beendet` : `mit Code ${code} beendet`}.`,
-          ),
-        );
-      } else resolve();
+  if (devServer) {
+    await new Promise((resolve, reject) => {
+      devServer.once("exit", (code, signal) => {
+        if (!cleaningUp) {
+          reject(
+            new Error(
+              `Der Entwicklungsserver wurde ${signal ? `durch ${signal} beendet` : `mit Code ${code} beendet`}.`,
+            ),
+          );
+        } else resolve();
+      });
     });
-  });
+  } else {
+    await new Promise(() => {});
+  }
 } catch (error) {
   console.error(`\nStart fehlgeschlagen: ${error.message}`);
   await cleanup(1);
